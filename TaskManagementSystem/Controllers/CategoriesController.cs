@@ -67,9 +67,9 @@ public class CategoriesController : ControllerBase
     [HttpGet("{categoryId}/tasks")]
     public async Task<ActionResult<List<TaskResponseDto>>> GetTasksByCategory([FromRoute] int categoryId)
     {
-        var category = await _categoriesService.GetCategoryByIdAsync(categoryId);
+        var exist = await _categoriesService.CategoryExistsAsync(categoryId);
         
-        if (category == null)
+        if (exist == false)
             return new NotFoundResult();
 
         var result = await _categoriesService.GetTasksByCategoryAsync(categoryId);

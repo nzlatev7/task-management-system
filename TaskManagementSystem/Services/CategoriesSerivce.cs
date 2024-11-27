@@ -101,10 +101,6 @@ public sealed class CategoriesSerivce : ICategoriesService
         return result;
     }
 
-    // TODO
-    // efficinet
-    // redundancy?
-    // not proper to be here
     public async Task<bool> CategoryExistsAsync(int categoryId)
     {
         return await _dbContext.Categories.AnyAsync(c => c.Id == categoryId).ConfigureAwait(false);
