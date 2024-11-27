@@ -18,7 +18,7 @@ public class TasksController : ControllerBase
     }
 
     [HttpPost]
-    public async Task<ActionResult<TaskResponseDto>> CreateTask(TaskRequestDto taskDto)
+    public async Task<ActionResult<TaskResponseDto>> CreateTask([FromBody] TaskRequestDto taskDto)
     {
         try
         {
@@ -51,7 +51,7 @@ public class TasksController : ControllerBase
 
 
     [HttpPut("{taskId}")]
-    public async Task<ActionResult<TaskResponseDto>> UpdateTask([FromRoute] int taskId, TaskRequestDto taskDto)
+    public async Task<ActionResult<TaskResponseDto>> UpdateTask([FromRoute] int taskId, [FromBody] TaskRequestDto taskDto)
     {
         try
         {

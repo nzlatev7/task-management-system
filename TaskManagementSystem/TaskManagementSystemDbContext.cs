@@ -1,6 +1,4 @@
-﻿using System.Reflection.Metadata;
-using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Hosting;
+﻿using Microsoft.EntityFrameworkCore;
 using TaskManagementSystem.Models;
 
 namespace TaskManagementSystem
@@ -9,7 +7,7 @@ namespace TaskManagementSystem
     {
         public TaskManagementSystemDbContext(DbContextOptions<TaskManagementSystemDbContext> options) : base(options) { }
 
-        public DbSet<TaskEntity> Tasks { get; set; } = null!;
-        public DbSet<Category> Categories { get; set; } = null!;
+        public DbSet<TaskEntity> Tasks { get; set; } = default!;
+        public DbSet<Category> Categories { get; set; } = default!;
     }
 }

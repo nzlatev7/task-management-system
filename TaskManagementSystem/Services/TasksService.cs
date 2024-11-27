@@ -40,6 +40,7 @@ public sealed class TasksService : ITasksService
 
         return taskEntity.ToOutDto();
     }
+
     public async Task<List<TaskResponseDto>> GetAllTasksAsync()
     {
         var result = new List<TaskResponseDto>();

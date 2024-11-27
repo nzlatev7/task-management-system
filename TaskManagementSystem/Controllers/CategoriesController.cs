@@ -17,7 +17,7 @@ public class CategoriesController : ControllerBase
     }
 
     [HttpPost]
-    public async Task<ActionResult<CategoryResponseDto>> CreateCategory(CategoryRequestDto categoryDto)
+    public async Task<ActionResult<CategoryResponseDto>> CreateCategory([FromBody] CategoryRequestDto categoryDto)
     {
         var result = await _categoriesService.CreateCategoryAsync(categoryDto);
         return new OkObjectResult(result);
@@ -42,7 +42,7 @@ public class CategoriesController : ControllerBase
     }
 
     [HttpPut("{categoryId}")]
-    public async Task<ActionResult<CategoryResponseDto>> UpdateCategory([FromRoute] int categoryId, CategoryRequestDto categoryDto)
+    public async Task<ActionResult<CategoryResponseDto>> UpdateCategory([FromRoute] int categoryId, [FromBody] CategoryRequestDto categoryDto)
     {
         var result = await _categoriesService.UpdateCategoryAsync(categoryId, categoryDto);
 
