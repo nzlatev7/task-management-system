@@ -7,7 +7,7 @@ public sealed class Category
 {
     public int Id { get; set; }
 
-    [MaxLength(EntityConstants.NameMaxLength)]
+    [MaxLength(EntityFiledValidation.NameMaxLength)]
     public required string Name { get; set; }
 
     public string? Description { get; set; }
