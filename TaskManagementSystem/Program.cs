@@ -25,11 +25,15 @@ var app = builder.Build();
 if (app.Environment.IsDevelopment())
 {
     app.MapOpenApi();
+
+    // used to display OpenAPI documentation
     app.MapScalarApiReference(options =>
     {
         options.WithTitle("Task Management System")
         .WithTheme(ScalarTheme.BluePlanet);
     });
+
+    app.UseExceptionHandler("/error-development");
 }
 
 app.UseHttpsRedirection();
