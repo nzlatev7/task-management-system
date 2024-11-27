@@ -1,10 +1,8 @@
 ﻿using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 using TaskManagementSystem.Constants;
 using TaskManagementSystem.DTOs.Request;
 using TaskManagementSystem.DTOs.Response;
-using TaskManagementSystem.Helpers;
-using TaskManagementSystem.Models;
+using TaskManagementSystem.Interfaces;
 
 namespace TaskManagementSystem.Controllers;
 
@@ -12,109 +10,72 @@ namespace TaskManagementSystem.Controllers;
 [Route("api/tasks")]
 public class TasksController : ControllerBase
 {
-    private readonly TaskManagementSystemDbContext _dbContext;
+    private readonly ITasksService _tasksService;
 
-    public TasksController(TaskManagementSystemDbContext context)
+    public TasksController(ITasksService tasksService)
     {
-        _dbContext = context;
+        _tasksService = tasksService;
     }
 
     [HttpPost]
     public async Task<ActionResult<TaskResponseDto>> CreateTask(TaskRequestDto taskDto)
     {
-        var categoryExist = await CategoryExistsAsync(taskDto.CategoryId);
-
-        if (!categoryExist)
-            return new BadRequestObjectResult(ValidationMessages.CategoryDoesNotExist);
-
-        var taskEntity = new TaskEntity()
+        try
         {
-            Title = taskDto.Title,
-            Description = taskDto.Description,
-            DueDate = taskDto.DueDate,
-            IsCompleted = taskDto.IsCompleted,
-            CategoryId = taskDto.CategoryId,
-        };
-        
-        await _dbContext.Tasks.AddAsync(taskEntity).ConfigureAwait(false);
-        await _dbContext.SaveChangesAsync().ConfigureAwait(false);
-
-        var result = taskEntity.ToOutDto();
-
-        return new OkObjectResult(result);
+            var result = await _tasksService.CreateTaskAsync(taskDto);
+            return new OkObjectResult(result);
+        }
+        catch (ArgumentException ex) when (ex.Message == ValidationMessages.CategoryDoesNotExist)
+        {
+            return new BadRequestObjectResult(ex.Message);
+        }
     }
 
     [HttpGet]
     public async Task<ActionResult<List<TaskResponseDto>>> GetAllTasks()
     {
-        var result = new List<TaskResponseDto>();
-
-        var tasks = await _dbContext.Tasks.ToListAsync().ConfigureAwait(false);
-
-        foreach (var taskEntity in tasks) 
-        {
-            result.Add(taskEntity.ToOutDto());
-        }
-
+        var result = await _tasksService.GetAllTasksAsync();
         return new OkObjectResult(result);
     }
 
     [HttpGet("{taskId}")]
-    public async Task<ActionResult<TaskResponseDto>> GetTaskById(int taskId)
+    public async Task<ActionResult<TaskResponseDto>> GetTaskById([FromRoute] int taskId)
     {
-        var taskEntity = await _dbContext.Tasks.FindAsync(taskId).ConfigureAwait(false);
+        var result = await _tasksService.GetTaskByIdAsync(taskId);
 
-        if (taskEntity == null)
+        if (result == null)
             return new NotFoundResult();
-
-        var result = taskEntity.ToOutDto();
 
         return new OkObjectResult(result);
     }
 
 
     [HttpPut("{taskId}")]
-    public async Task<ActionResult<TaskResponseDto>> UpdateTask(int taskId, TaskRequestDto taskDto)
+    public async Task<ActionResult<TaskResponseDto>> UpdateTask([FromRoute] int taskId, TaskRequestDto taskDto)
     {
-        var taskEntity = await _dbContext.Tasks.FindAsync(taskId).ConfigureAwait(false);
+        try
+        {
+            var result = await _tasksService.UpdateTaskAsync(taskId, taskDto);
 
-        if (taskEntity == null)
-            return new NotFoundResult();
+            if (result == null)
+                return new NotFoundResult();
 
-        var categoryExist = await CategoryExistsAsync(taskDto.CategoryId);
-
-        if (!categoryExist)
-            return new BadRequestObjectResult(ValidationMessages.CategoryDoesNotExist);
-
-        taskEntity.Title = taskDto.Title;
-        taskEntity.Description = taskDto.Description;
-        taskEntity.DueDate = taskDto.DueDate;
-        taskEntity.IsCompleted = taskDto.IsCompleted;
-        taskEntity.CategoryId = taskDto.CategoryId;
-
-        await _dbContext.SaveChangesAsync().ConfigureAwait(false);
-
-        var result = taskEntity.ToOutDto();
-
-        return new OkObjectResult(taskDto);
+            return new OkObjectResult(result);
+        }
+        catch (ArgumentException ex) when (ex.Message == ValidationMessages.CategoryDoesNotExist)
+        {
+            return new BadRequestObjectResult(ex.Message);
+        }
     }
 
     [HttpDelete("{taskId}")]
-    public async Task<ActionResult> DeleteTask(int taskId)
+    public async Task<ActionResult> DeleteTask([FromRoute] int taskId)
     {
-        var taskEntity = await _dbContext.Tasks.FindAsync(taskId).ConfigureAwait(false);
+        var result = await _tasksService.DeleteTaskAsync(taskId);
 
-        if (taskEntity == null)
+        if (result == false)
             return new NotFoundResult();
 
-        _dbContext.Tasks.Remove(taskEntity);
-        await _dbContext.SaveChangesAsync().ConfigureAwait(false);
-
         return new OkResult();
-    }
-
-    private async Task<bool> CategoryExistsAsync(int categoryId)
-    {
-        return await _dbContext.Categories.AnyAsync(c => c.Id == categoryId).ConfigureAwait(false);
     }
 }
