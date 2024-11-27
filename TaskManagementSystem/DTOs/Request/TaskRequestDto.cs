@@ -4,7 +4,7 @@ using TaskManagementSystem.Constants;
 
 namespace TaskManagementSystem.DTOs.Request;
 
-public class TaskRequestDto
+public sealed class TaskRequestDto
 {
     [Required]
     [MaxLength(EntityFiledValidation.TitleMaxLength)]
