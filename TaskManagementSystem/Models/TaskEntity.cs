@@ -10,6 +10,7 @@ public sealed class TaskEntity
     [MaxLength(EntityFiledValidation.TitleMaxLength)]
     public required string Title { get; set; }
 
+    [MaxLength(EntityFiledValidation.DescriptionMaxLength)]
     public string? Description { get; set; }
 
     public DateTime DueDate { get; set; }

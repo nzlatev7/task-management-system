@@ -10,6 +10,7 @@ public sealed class Category
     [MaxLength(EntityFiledValidation.NameMaxLength)]
     public required string Name { get; set; }
 
+    [MaxLength(EntityFiledValidation.DescriptionMaxLength)]
     public string? Description { get; set; }
 
     public ICollection<TaskEntity> Tasks { get; } = new List<TaskEntity>();
