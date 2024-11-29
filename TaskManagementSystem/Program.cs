@@ -12,9 +12,21 @@ builder.Services.AddControllers();
 // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
 builder.Services.AddOpenApi();
 
-// configure db provider
-var dbConnectionString = builder.Configuration.GetConnectionString("Database");
-builder.Services.AddDbContext<TaskManagementSystemDbContext>(opt => opt.UseNpgsql(dbConnectionString));
+var databaseProvider = builder.Configuration["DatabaseProvider"];
+
+if (databaseProvider == "InMemory")
+{
+    // configure In-Memory Database, used for Services Unit Testing
+    builder.Services.AddDbContext<TaskManagementSystemDbContext>(options =>
+        options.UseInMemoryDatabase("InMemoryDb"));
+}
+else
+{
+    // configure PostgreSQL db provider
+    var dbConnectionString = builder.Configuration.GetConnectionString("Database");
+    builder.Services.AddDbContext<TaskManagementSystemDbContext>(opt =>
+        opt.UseNpgsql(dbConnectionString));
+}
 
 builder.Services.AddScoped<ITasksService, TasksService>();
 builder.Services.AddScoped<ICategoriesService, CategoriesSerivce>();
