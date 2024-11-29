@@ -144,6 +144,7 @@ public sealed class CategoriesContollerTests
     {
         // Arrange
         var categoryId = 1;
+
         _categoriesServiceMock
             .Setup(service => service.GetCategoryByIdAsync(categoryId))
             .ThrowsAsync(new InvalidOperationException("Unexpected error"));

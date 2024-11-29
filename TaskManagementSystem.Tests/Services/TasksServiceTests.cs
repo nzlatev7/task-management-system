@@ -57,19 +57,13 @@ public sealed class TasksServiceTests : IDisposable
         var result = await _tasksService.CreateTaskAsync(taskDto);
 
         // Assert
-        Assert.Equal(taskDto.Title, result.Title);
-        Assert.Equal(taskDto.Description, result.Description);
-        Assert.Equal(taskDto.DueDate, result.DueDate);
-        Assert.Equal(taskDto.IsCompleted, result.IsCompleted);
+        AssertHelper.Equal(taskDto, result);
 
         var savedTask = await _dbContext.Tasks
             .FirstOrDefaultAsync(t => t.Id == result.Id);
 
         Assert.NotNull(savedTask);
-        Assert.Equal(taskDto.Title, savedTask.Title);
-        Assert.Equal(taskDto.Description, savedTask.Description);
-        Assert.Equal(taskDto.DueDate, savedTask.DueDate);
-        Assert.Equal(taskDto.IsCompleted, savedTask.IsCompleted);
+        AssertHelper.Equal(taskDto, savedTask);
 
         _categoriesServiceMock.Verify(c => c.CategoryExistsAsync(It.IsAny<int>()), Times.Once);
     }
@@ -129,11 +123,7 @@ public sealed class TasksServiceTests : IDisposable
 
         // Assert
         Assert.NotNull(result);
-        Assert.Equal(expectedTask.Id, result.Id);
-        Assert.Equal(expectedTask.Title, result.Title);
-        Assert.Equal(expectedTask.Description, result.Description);
-        Assert.Equal(expectedTask.DueDate, result.DueDate);
-        Assert.Equal(expectedTask.IsCompleted, result.IsCompleted);
+        AssertHelper.Equal(expectedTask, result);
     }
 
     [Fact]
@@ -178,20 +168,13 @@ public sealed class TasksServiceTests : IDisposable
 
         // Assert
         Assert.NotNull(result);
-        Assert.Equal(targetTask.Id, result.Id);
-        Assert.Equal(targetTask.Title, result.Title);
-        Assert.Equal(targetTask.Description, result.Description);
-        Assert.Equal(targetTask.DueDate, result.DueDate);
-        Assert.Equal(targetTask.IsCompleted, result.IsCompleted);
+        AssertHelper.Equal(targetTask, result);
 
         var updatedTask = await _dbContext.Tasks
             .FirstOrDefaultAsync(t => t.Id == result.Id);
 
         Assert.NotNull(updatedTask);
-        Assert.Equal(taskDto.Title, updatedTask.Title);
-        Assert.Equal(taskDto.Description, updatedTask.Description);
-        Assert.Equal(taskDto.DueDate, updatedTask.DueDate);
-        Assert.Equal(taskDto.IsCompleted, updatedTask.IsCompleted);
+        AssertHelper.Equal(targetTask, updatedTask);
 
         _categoriesServiceMock.Verify(c => c.CategoryExistsAsync(It.IsAny<int>()), Times.Once);
     }
@@ -289,6 +272,4 @@ public sealed class TasksServiceTests : IDisposable
     }
 
     #endregion
-
-
 }

@@ -43,16 +43,14 @@ public sealed class CategoriesServiceTests : IDisposable
         // Act
         var result = await _categoriesService.CreateCategoryAsync(categoryDto);
 
-        // Assert            
-        Assert.Equal(categoryDto.Name, result.Name);
-        Assert.Equal(categoryDto.Description, result.Description);
+        // Assert
+        AssertHelper.Equal(categoryDto, result);
 
         var savedCategory = await _dbContext.Categories
             .FirstOrDefaultAsync(t => t.Id == result.Id);
 
         Assert.NotNull(savedCategory);
-        Assert.Equal(categoryDto.Name, savedCategory.Name);
-        Assert.Equal(categoryDto.Description, savedCategory.Description);
+        AssertHelper.Equal(categoryDto, savedCategory);
     }
 
     #endregion
@@ -89,8 +87,7 @@ public sealed class CategoriesServiceTests : IDisposable
 
         // Assert            
         Assert.NotNull(result);
-        Assert.Equal(targetCategory.Name, result.Name);
-        Assert.Equal(targetCategory.Description, result.Description);
+        AssertHelper.Equal(targetCategory, result);
     }
 
     [Fact]
@@ -129,15 +126,13 @@ public sealed class CategoriesServiceTests : IDisposable
 
         // Assert            
         Assert.NotNull(result);
-        Assert.Equal(targetCategory.Name, result.Name);
-        Assert.Equal(targetCategory.Description, result.Description);
+        AssertHelper.Equal(targetCategory, result);
 
         var updatedCategory = await _dbContext.Categories
             .FirstOrDefaultAsync(t => t.Id == result.Id);
 
         Assert.NotNull(updatedCategory);
-        Assert.Equal(categoryDto.Name, updatedCategory.Name);
-        Assert.Equal(categoryDto.Description, updatedCategory.Description);
+        AssertHelper.Equal(targetCategory, updatedCategory);
     }
 
     [Fact]
@@ -189,7 +184,7 @@ public sealed class CategoriesServiceTests : IDisposable
     }
 
     [Fact]
-    public async Task DeleteCategoryAsync_CategoryDoesNotExist_ReturnsNull()
+    public async Task DeleteCategoryAsync_CategoryDoesNotExist_ReturnsFalse()
     {
         // Arrange
         var nonExistingCategoryId = 1000;
