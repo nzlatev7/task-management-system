@@ -1,10 +1,12 @@
-﻿using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.EntityFrameworkCore;
+using TaskManagementSystem.Constants;
+using TaskManagementSystem.Database;
+using TaskManagementSystem.Database.Models;
 using TaskManagementSystem.DTOs.Request;
 using TaskManagementSystem.DTOs.Response;
+using TaskManagementSystem.Exceptions;
 using TaskManagementSystem.Helpers;
 using TaskManagementSystem.Interfaces;
-using TaskManagementSystem.Models;
 
 namespace TaskManagementSystem.Services;
 
@@ -19,90 +21,83 @@ public sealed class CategoriesSerivce : ICategoriesService
 
     public async Task<CategoryResponseDto> CreateCategoryAsync(CategoryRequestDto categoryDto)
     {
-        var category = new Category()
+        var category = new CategoryEntity()
         {
             Name = categoryDto.Name,
             Description = categoryDto.Description
         };
 
-        await _dbContext.Categories.AddAsync(category).ConfigureAwait(false);
-        await _dbContext.SaveChangesAsync().ConfigureAwait(false);
-
-        var result = category.ToOutDto();
-
-        return result;
-    }
-
-    public async Task<List<CategoryResponseDto>> GetAllCategoriesAsync()
-    {
-        var result = new List<CategoryResponseDto>();
-
-        var categories = await _dbContext.Categories.ToListAsync().ConfigureAwait(false);
-
-        foreach (var category in categories)
-        {
-            result.Add(category.ToOutDto());
-        }
-
-        return result;
-    }
-
-    public async Task<CategoryResponseDto?> GetCategoryByIdAsync(int categoryId)
-    {
-        var category = await _dbContext.Categories.FindAsync(categoryId).ConfigureAwait(false);
-
-        var result = category?.ToOutDto();
-
-        return result;
-    }
-
-    public async Task<CategoryResponseDto?> UpdateCategoryAsync(int categoryId, CategoryRequestDto categoryDto)
-    {
-        var category = await _dbContext.Categories.FindAsync(categoryId).ConfigureAwait(false);
-
-        if (category == null)
-            return null;
-
-        category.Name = categoryDto.Name;
-        category.Description = categoryDto.Description;
-
-        await _dbContext.SaveChangesAsync().ConfigureAwait(false);
+        await _dbContext.Categories.AddAsync(category);
+        await _dbContext.SaveChangesAsync();
 
         return category.ToOutDto();
     }
 
-    public async Task<bool> DeleteCategoryAsync([FromRoute] int categoryId)
+    public async Task<IEnumerable<CategoryResponseDto>> GetAllCategoriesAsync()
     {
-        var category = await _dbContext.Categories.FindAsync(categoryId).ConfigureAwait(false);
+        var categories = await _dbContext.Categories
+            .ToOutDtos();
 
-        if (category == null)
-            return false;
-
-        _dbContext.Categories.Remove(category);
-        await _dbContext.SaveChangesAsync().ConfigureAwait(false);
-
-        return true;
+        return categories;
     }
 
-    public async Task<List<TaskResponseDto>> GetTasksByCategoryAsync(int categoryId)
+    public async Task<CategoryResponseDto> GetCategoryByIdAsync(int categoryId)
     {
+        var category = await _dbContext.Categories.FindAsync(categoryId);
+
+        if (category is null)
+            throw new NotFoundException(ValidationMessages.CategoryDoesNotExist);
+
+        return category.ToOutDto();
+    }
+
+    public async Task<CategoryResponseDto?> UpdateCategoryAsync(int categoryId, CategoryRequestDto categoryDto)
+    {
+        var category = await _dbContext.Categories.FindAsync(categoryId);
+
+        if (category is null)
+            throw new NotFoundException(ValidationMessages.CategoryDoesNotExist);
+
+        category.Name = categoryDto.Name;
+        category.Description = categoryDto.Description;
+
+        await _dbContext.SaveChangesAsync();
+
+        return category.ToOutDto();
+    }
+
+    public async Task DeleteCategoryAsync(int categoryId)
+    {
+        var taskAssociatedToCategory = await _dbContext.Tasks
+            .AnyAsync(x => x.CategoryId == categoryId);
+
+        if (taskAssociatedToCategory)
+            throw new ConflictException(ValidationMessages.AssociatedTasksToCategory);
+
+        var deletedRows = await _dbContext.Categories
+            .Where(x => x.Id == categoryId)
+            .ExecuteDeleteAsync();
+
+        if (deletedRows is 0)
+            throw new NotFoundException(ValidationMessages.CategoryDoesNotExist);
+    }
+
+    public async Task<IEnumerable<TaskResponseDto>> GetTasksByCategoryAsync(int categoryId)
+    {
+        var categoryExists = await CategoryExistsAsync(categoryId);
+
+        if (!categoryExists)
+            throw new NotFoundException(ValidationMessages.CategoryDoesNotExist);
+
         var tasks = await _dbContext.Tasks
             .Where(x => x.CategoryId == categoryId)
-            .ToListAsync()
-            .ConfigureAwait(false);
+            .ToOutDtos();
 
-        var result = new List<TaskResponseDto>();
-
-        foreach (var task in tasks)
-        {
-            result.Add(task.ToOutDto());
-        }
-
-        return result;
+        return tasks;
     }
 
     public async Task<bool> CategoryExistsAsync(int categoryId)
     {
-        return await _dbContext.Categories.AnyAsync(c => c.Id == categoryId).ConfigureAwait(false);
+        return await _dbContext.Categories.AnyAsync(c => c.Id == categoryId);
     }
 }

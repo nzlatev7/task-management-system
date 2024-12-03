@@ -1,17 +1,22 @@
 ﻿using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 using TaskManagementSystem.Constants;
 
-namespace TaskManagementSystem.Models;
+namespace TaskManagementSystem.Database.Models;
 
-public sealed class Category
+[Table("category")]
+public class CategoryEntity
 {
+    [Column("id")]
     public int Id { get; set; }
 
+    [Column("name")]
     [MaxLength(EntityFiledValidation.NameMaxLength)]
     public required string Name { get; set; }
 
+    [Column("description")]
     [MaxLength(EntityFiledValidation.DescriptionMaxLength)]
     public string? Description { get; set; }
 
-    public ICollection<TaskEntity> Tasks { get; } = new List<TaskEntity>();
+    public virtual ICollection<TaskEntity> Tasks { get; } = new List<TaskEntity>();
 }

@@ -20,14 +20,16 @@ public class CategoriesController : ControllerBase
     public async Task<ActionResult<CategoryResponseDto>> CreateCategory([FromBody] CategoryRequestDto categoryDto)
     {
         var result = await _categoriesService.CreateCategoryAsync(categoryDto);
-        return new OkObjectResult(result);
+
+        return Ok(result);
     }
 
     [HttpGet]
-    public async Task<ActionResult<List<CategoryResponseDto>>> GetAllCategories()
+    public async Task<ActionResult<IEnumerable<CategoryResponseDto>>> GetAllCategories()
     {
         var result = await _categoriesService.GetAllCategoriesAsync();
-        return new OkObjectResult(result);
+
+        return Ok(result);
     }
 
     [HttpGet("{categoryId}")]
@@ -35,10 +37,7 @@ public class CategoriesController : ControllerBase
     {
         var result = await _categoriesService.GetCategoryByIdAsync(categoryId);
 
-        if (result == null)
-            return new NotFoundResult();
-
-        return new OkObjectResult(result);
+        return Ok(result);
     }
 
     [HttpPut("{categoryId}")]
@@ -46,34 +45,23 @@ public class CategoriesController : ControllerBase
     {
         var result = await _categoriesService.UpdateCategoryAsync(categoryId, categoryDto);
 
-        if (result == null)
-            return new NotFoundResult();
-
-        return new OkObjectResult(result);
+        return Ok(result);
     }
 
 
     [HttpDelete("{categoryId}")]
     public async Task<ActionResult> DeleteCategory([FromRoute] int categoryId)
     {
-        var result = await _categoriesService.DeleteCategoryAsync(categoryId);
+        await _categoriesService.DeleteCategoryAsync(categoryId);
 
-        if (result == false)
-            return new NotFoundResult();
-
-        return new OkResult();
+        return Ok();
     }
 
     [HttpGet("{categoryId}/tasks")]
     public async Task<ActionResult<List<TaskResponseDto>>> GetTasksByCategory([FromRoute] int categoryId)
     {
-        var exist = await _categoriesService.CategoryExistsAsync(categoryId);
-        
-        if (exist == false)
-            return new NotFoundResult();
-
         var result = await _categoriesService.GetTasksByCategoryAsync(categoryId);
         
-        return new OkObjectResult(result);
+        return Ok(result);
     }
 }

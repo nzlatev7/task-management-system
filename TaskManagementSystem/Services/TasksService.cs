@@ -1,10 +1,12 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using TaskManagementSystem.Constants;
+using TaskManagementSystem.Database.Models;
+using TaskManagementSystem.Database;
 using TaskManagementSystem.DTOs.Request;
 using TaskManagementSystem.DTOs.Response;
+using TaskManagementSystem.Exceptions;
 using TaskManagementSystem.Helpers;
 using TaskManagementSystem.Interfaces;
-using TaskManagementSystem.Models;
 
 namespace TaskManagementSystem.Services;
 
@@ -24,7 +26,7 @@ public sealed class TasksService : ITasksService
         var categoryExist = await _categoriesService.CategoryExistsAsync(taskDto.CategoryId);
 
         if (!categoryExist)
-            throw new ArgumentException(ValidationMessages.CategoryDoesNotExist);
+            throw new BadHttpRequestException(ValidationMessages.CategoryDoesNotExist);
 
         var taskEntity = new TaskEntity()
         {
@@ -35,46 +37,41 @@ public sealed class TasksService : ITasksService
             CategoryId = taskDto.CategoryId
         };
 
-        await _dbContext.Tasks.AddAsync(taskEntity).ConfigureAwait(false);
-        await _dbContext.SaveChangesAsync().ConfigureAwait(false);
+        await _dbContext.Tasks.AddAsync(taskEntity);
+        await _dbContext.SaveChangesAsync();
 
         return taskEntity.ToOutDto();
     }
 
-    public async Task<List<TaskResponseDto>> GetAllTasksAsync()
+    public async Task<IEnumerable<TaskResponseDto>> GetAllTasksAsync()
     {
-        var result = new List<TaskResponseDto>();
+        var tasks = await _dbContext.Tasks
+            .ToOutDtos();
 
-        var tasks = await _dbContext.Tasks.ToListAsync().ConfigureAwait(false);
-
-        foreach (var taskEntity in tasks)
-        {
-            result.Add(taskEntity.ToOutDto());
-        }
-
-        return result;
+        return tasks;
     }
 
-    public async Task<TaskResponseDto?> GetTaskByIdAsync(int taskId)
+    public async Task<TaskResponseDto> GetTaskByIdAsync(int taskId)
     {
-        var taskEntity = await _dbContext.Tasks.FindAsync(taskId).ConfigureAwait(false);
+        var taskEntity = await _dbContext.Tasks.FindAsync(taskId);
 
-        var result = taskEntity?.ToOutDto();
+        if (taskEntity is null)
+            throw new NotFoundException(ValidationMessages.TaskDoesNotExist);
 
-        return result;
+        return taskEntity.ToOutDto();
     }
 
     public async Task<TaskResponseDto?> UpdateTaskAsync(int taskId, TaskRequestDto taskDto)
     {
-        var taskEntity = await _dbContext.Tasks.FindAsync(taskId).ConfigureAwait(false);
+        var taskEntity = await _dbContext.Tasks.FindAsync(taskId);
 
-        if (taskEntity == null)
-            return null;
+        if (taskEntity is null)
+            throw new NotFoundException(ValidationMessages.TaskDoesNotExist);
 
-        var categoryExist = await _categoriesService.CategoryExistsAsync(taskDto.CategoryId);
+        var categoryExists = await _categoriesService.CategoryExistsAsync(taskDto.CategoryId);
 
-        if (!categoryExist)
-            throw new ArgumentException(ValidationMessages.CategoryDoesNotExist);
+        if (!categoryExists)
+            throw new BadHttpRequestException(ValidationMessages.CategoryDoesNotExist);
 
         taskEntity.Title = taskDto.Title;
         taskEntity.Description = taskDto.Description;
@@ -82,21 +79,18 @@ public sealed class TasksService : ITasksService
         taskEntity.IsCompleted = taskDto.IsCompleted;
         taskEntity.CategoryId = taskDto.CategoryId;
 
-        await _dbContext.SaveChangesAsync().ConfigureAwait(false);
+        await _dbContext.SaveChangesAsync();
 
         return taskEntity.ToOutDto();
     }
 
-    public async Task<bool> DeleteTaskAsync(int taskId)
+    public async Task DeleteTaskAsync(int taskId)
     {
-        var taskEntity = await _dbContext.Tasks.FindAsync(taskId);
+        var deletedRows = await _dbContext.Tasks
+            .Where(x => x.Id == taskId)
+            .ExecuteDeleteAsync();
 
-        if (taskEntity == null)
-            return false;
-
-        _dbContext.Tasks.Remove(taskEntity);
-        await _dbContext.SaveChangesAsync().ConfigureAwait(false);
-
-        return true;
+        if (deletedRows is 0)
+            throw new NotFoundException(ValidationMessages.TaskDoesNotExist);
     }
 }

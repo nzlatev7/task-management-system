@@ -1,5 +1,4 @@
 ﻿using Microsoft.AspNetCore.Mvc;
-using TaskManagementSystem.Constants;
 using TaskManagementSystem.DTOs.Request;
 using TaskManagementSystem.DTOs.Response;
 using TaskManagementSystem.Interfaces;
@@ -20,22 +19,17 @@ public class TasksController : ControllerBase
     [HttpPost]
     public async Task<ActionResult<TaskResponseDto>> CreateTask([FromBody] TaskRequestDto taskDto)
     {
-        try
-        {
-            var result = await _tasksService.CreateTaskAsync(taskDto);
-            return new OkObjectResult(result);
-        }
-        catch (ArgumentException ex) when (ex.Message == ValidationMessages.CategoryDoesNotExist)
-        {
-            return new BadRequestObjectResult(ex.Message);
-        }
+        var result = await _tasksService.CreateTaskAsync(taskDto);
+
+        return Ok(result);
     }
 
     [HttpGet]
-    public async Task<ActionResult<List<TaskResponseDto>>> GetAllTasks()
+    public async Task<ActionResult<IEnumerable<TaskResponseDto>>> GetAllTasks()
     {
         var result = await _tasksService.GetAllTasksAsync();
-        return new OkObjectResult(result);
+
+        return Ok(result);
     }
 
     [HttpGet("{taskId}")]
@@ -43,39 +37,22 @@ public class TasksController : ControllerBase
     {
         var result = await _tasksService.GetTaskByIdAsync(taskId);
 
-        if (result == null)
-            return new NotFoundResult();
-
-        return new OkObjectResult(result);
+        return Ok(result);
     }
-
 
     [HttpPut("{taskId}")]
     public async Task<ActionResult<TaskResponseDto>> UpdateTask([FromRoute] int taskId, [FromBody] TaskRequestDto taskDto)
     {
-        try
-        {
-            var result = await _tasksService.UpdateTaskAsync(taskId, taskDto);
+        var result = await _tasksService.UpdateTaskAsync(taskId, taskDto);
 
-            if (result == null)
-                return new NotFoundResult();
-
-            return new OkObjectResult(result);
-        }
-        catch (ArgumentException ex) when (ex.Message == ValidationMessages.CategoryDoesNotExist)
-        {
-            return new BadRequestObjectResult(ex.Message);
-        }
+        return Ok(result);
     }
 
     [HttpDelete("{taskId}")]
     public async Task<ActionResult> DeleteTask([FromRoute] int taskId)
     {
-        var result = await _tasksService.DeleteTaskAsync(taskId);
+        await _tasksService.DeleteTaskAsync(taskId);
 
-        if (result == false)
-            return new NotFoundResult();
-
-        return new OkResult();
+        return Ok();
     }
 }
