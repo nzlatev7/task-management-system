@@ -18,5 +18,8 @@ public class CategoryEntity
     [MaxLength(EntityFiledConstants.DescriptionMaxLength)]
     public string? Description { get; set; }
 
+    [Column("completion_percentage")]
+    public short CompletionPercentage { get; set; }
+
     public virtual ICollection<TaskEntity> Tasks { get; } = new List<TaskEntity>();
 }

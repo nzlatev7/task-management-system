@@ -4,6 +4,7 @@ using TaskManagementSystem.Database;
 using TaskManagementSystem.Database.Models;
 using TaskManagementSystem.DTOs.Request;
 using TaskManagementSystem.DTOs.Response;
+using TaskManagementSystem.Enums;
 using TaskManagementSystem.Exceptions;
 using TaskManagementSystem.Helpers;
 using TaskManagementSystem.Interfaces;
@@ -94,6 +95,39 @@ public sealed class CategoriesSerivce : ICategoriesService
             .ToOutDtos();
 
         return tasks;
+    }
+
+    public async Task<CategoryCompletionStatusResponseDto> GetCompletionStatus(int categoryId)
+    {
+        var categoryStats = await _dbContext.Categories
+            .Where(x => x.Id == categoryId)
+            .Select(x => new CompletionStatusStatsDto()
+            {
+                PendingCount = x.Tasks.Where(x => x.Status == Status.Pending).Count(),
+                InProgressCount = x.Tasks.Where(x => x.Status == Status.InProgress).Count(),
+                CompletedCount = x.Tasks.Where(x => x.Status == Status.Completed).Count(),
+                ArchivedCount = x.Tasks.Where(x => x.Status == Status.Archived).Count()
+            }).FirstOrDefaultAsync();
+
+        if (categoryStats == null)
+            throw new NotFoundException(ErrorMessageConstants.CategoryDoesNotExist);
+
+        var validTasksCount = categoryStats.PendingCount + categoryStats.InProgressCount + categoryStats.CompletedCount;
+        if (validTasksCount == 0)
+            throw new ConflictException(ErrorMessageConstants.CategoryWithoutTasks);
+
+        short completionPercentage = (short)((categoryStats.CompletedCount / (double)validTasksCount) * 100);
+
+        await _dbContext.Database.ExecuteSqlInterpolatedAsync(
+            $"UPDATE category SET completion_percentage = {completionPercentage} WHERE id = {categoryId}");
+        
+        var result = new CategoryCompletionStatusResponseDto()
+        {
+            CompletionPercentage = completionPercentage,
+            CompletionStatusStats = categoryStats,
+        };
+
+        return result;
     }
 
     public async Task<bool> CategoryExistsAsync(int categoryId)

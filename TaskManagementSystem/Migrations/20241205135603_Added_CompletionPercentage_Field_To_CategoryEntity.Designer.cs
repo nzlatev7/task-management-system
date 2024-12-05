@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using TaskManagementSystem.Database;
@@ -11,9 +12,11 @@ using TaskManagementSystem.Database;
 namespace TaskManagementSystem.Migrations
 {
     [DbContext(typeof(TaskManagementSystemDbContext))]
-    partial class TaskManagementSystemDbContextModelSnapshot : ModelSnapshot
+    [Migration("20241205135603_Added_CompletionPercentage_Field_To_CategoryEntity")]
+    partial class Added_CompletionPercentage_Field_To_CategoryEntity
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
