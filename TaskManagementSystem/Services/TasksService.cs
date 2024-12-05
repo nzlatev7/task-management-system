@@ -7,6 +7,8 @@ using TaskManagementSystem.DTOs.Response;
 using TaskManagementSystem.Exceptions;
 using TaskManagementSystem.Helpers;
 using TaskManagementSystem.Interfaces;
+using TaskManagementSystem.Enums;
+using TaskManagementSystem.Extensions;
 
 namespace TaskManagementSystem.Services;
 
@@ -21,19 +23,21 @@ public sealed class TasksService : ITasksService
         _categoriesService = categoriesService;
     }
 
-    public async Task<TaskResponseDto> CreateTaskAsync(TaskRequestDto taskDto)
+    public async Task<TaskResponseDto> CreateTaskAsync(CreateTaskRequestDto taskDto)
     {
         var categoryExist = await _categoriesService.CategoryExistsAsync(taskDto.CategoryId);
 
         if (!categoryExist)
-            throw new BadHttpRequestException(ValidationMessages.CategoryDoesNotExist);
+            throw new BadHttpRequestException(ErrorMessageConstants.CategoryDoesNotExist);
 
         var taskEntity = new TaskEntity()
         {
             Title = taskDto.Title,
             Description = taskDto.Description,
             DueDate = taskDto.DueDate,
-            IsCompleted = taskDto.IsCompleted,
+            Priority = taskDto.Priority ?? Priority.Medium,
+            IsCompleted = false,
+            Status = Status.Pending,
             CategoryId = taskDto.CategoryId
         };
 
@@ -43,9 +47,10 @@ public sealed class TasksService : ITasksService
         return taskEntity.ToOutDto();
     }
 
-    public async Task<IEnumerable<TaskResponseDto>> GetAllTasksAsync()
+    public async Task<IEnumerable<TaskResponseDto>> GetAllTasksAsync(bool sortByPriorityAscending)
     {
         var tasks = await _dbContext.Tasks
+            .SortByPriority(sortByPriorityAscending)
             .ToOutDtos();
 
         return tasks;
@@ -56,27 +61,35 @@ public sealed class TasksService : ITasksService
         var taskEntity = await _dbContext.Tasks.FindAsync(taskId);
 
         if (taskEntity is null)
-            throw new NotFoundException(ValidationMessages.TaskDoesNotExist);
+            throw new NotFoundException(ErrorMessageConstants.TaskDoesNotExist);
 
         return taskEntity.ToOutDto();
     }
 
-    public async Task<TaskResponseDto?> UpdateTaskAsync(int taskId, TaskRequestDto taskDto)
+    public async Task<TaskResponseDto?> UpdateTaskAsync(int taskId, UpdateTaskRequestDto taskDto)
     {
         var taskEntity = await _dbContext.Tasks.FindAsync(taskId);
 
         if (taskEntity is null)
-            throw new NotFoundException(ValidationMessages.TaskDoesNotExist);
+            throw new NotFoundException(ErrorMessageConstants.TaskDoesNotExist);
+
+        if (taskEntity.Status != Status.Completed && taskDto.Status == Status.Archived)
+            throw new BadHttpRequestException(ErrorMessageConstants.OnlyCompletedTaskCanBeArchived);
+
+        if (taskEntity.Status == Status.Archived && taskDto.Status != Status.Archived)
+            throw new BadHttpRequestException(ErrorMessageConstants.ArchivedTaskCanNotBeMoved);
 
         var categoryExists = await _categoriesService.CategoryExistsAsync(taskDto.CategoryId);
 
         if (!categoryExists)
-            throw new BadHttpRequestException(ValidationMessages.CategoryDoesNotExist);
+            throw new BadHttpRequestException(ErrorMessageConstants.CategoryDoesNotExist);
 
         taskEntity.Title = taskDto.Title;
         taskEntity.Description = taskDto.Description;
         taskEntity.DueDate = taskDto.DueDate;
-        taskEntity.IsCompleted = taskDto.IsCompleted;
+        taskEntity.Priority = taskDto.Priority ?? Priority.Medium;
+        taskEntity.IsCompleted = IsCompleted(taskDto.Status);
+        taskEntity.Status = taskDto.Status;
         taskEntity.CategoryId = taskDto.CategoryId;
 
         await _dbContext.SaveChangesAsync();
@@ -91,6 +104,14 @@ public sealed class TasksService : ITasksService
             .ExecuteDeleteAsync();
 
         if (deletedRows is 0)
-            throw new NotFoundException(ValidationMessages.TaskDoesNotExist);
+            throw new NotFoundException(ErrorMessageConstants.TaskDoesNotExist);
+    }
+
+    private bool IsCompleted(Status taskStatus)
+    {
+        if (taskStatus == Status.Completed || taskStatus == Status.Archived)
+            return true;
+
+        return false;
     }
 }
