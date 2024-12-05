@@ -5,9 +5,9 @@ namespace TaskManagementSystem.DTOs.Request;
 
 public sealed class CategoryRequestDto
 {
-    [MaxLength(EntityFiledValidation.NameMaxLength)]
+    [MaxLength(EntityFiledConstants.NameMaxLength)]
     public required string Name { get; set; }
 
-    [MaxLength(EntityFiledValidation.DescriptionMaxLength)]
+    [MaxLength(EntityFiledConstants.DescriptionMaxLength)]
     public string? Description { get; set; }
 }

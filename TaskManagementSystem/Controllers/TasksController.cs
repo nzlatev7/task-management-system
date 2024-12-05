@@ -17,7 +17,7 @@ public class TasksController : ControllerBase
     }
 
     [HttpPost]
-    public async Task<ActionResult<TaskResponseDto>> CreateTask([FromBody] TaskRequestDto taskDto)
+    public async Task<ActionResult<TaskResponseDto>> CreateTask([FromBody] CreateTaskRequestDto taskDto)
     {
         var result = await _tasksService.CreateTaskAsync(taskDto);
 
@@ -25,9 +25,9 @@ public class TasksController : ControllerBase
     }
 
     [HttpGet]
-    public async Task<ActionResult<IEnumerable<TaskResponseDto>>> GetAllTasks()
+    public async Task<ActionResult<IEnumerable<TaskResponseDto>>> GetAllTasks([FromQuery] bool sortByPriorityAscending)
     {
-        var result = await _tasksService.GetAllTasksAsync();
+        var result = await _tasksService.GetAllTasksAsync(sortByPriorityAscending);
 
         return Ok(result);
     }
@@ -41,7 +41,7 @@ public class TasksController : ControllerBase
     }
 
     [HttpPut("{taskId}")]
-    public async Task<ActionResult<TaskResponseDto>> UpdateTask([FromRoute] int taskId, [FromBody] TaskRequestDto taskDto)
+    public async Task<ActionResult<TaskResponseDto>> UpdateTask([FromRoute] int taskId, [FromBody] UpdateTaskRequestDto taskDto)
     {
         var result = await _tasksService.UpdateTaskAsync(taskId, taskDto);
 
