@@ -11,11 +11,11 @@ public class CategoryEntity
     public int Id { get; set; }
 
     [Column("name")]
-    [MaxLength(EntityFiledValidation.NameMaxLength)]
+    [MaxLength(EntityFiledConstants.NameMaxLength)]
     public required string Name { get; set; }
 
     [Column("description")]
-    [MaxLength(EntityFiledValidation.DescriptionMaxLength)]
+    [MaxLength(EntityFiledConstants.DescriptionMaxLength)]
     public string? Description { get; set; }
 
     public virtual ICollection<TaskEntity> Tasks { get; } = new List<TaskEntity>();

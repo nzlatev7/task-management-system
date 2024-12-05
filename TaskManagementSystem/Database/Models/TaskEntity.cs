@@ -1,6 +1,7 @@
 ﻿using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 using TaskManagementSystem.Constants;
+using TaskManagementSystem.Enums;
 
 namespace TaskManagementSystem.Database.Models;
 
@@ -11,15 +12,18 @@ public class TaskEntity
     public int Id { get; set; }
 
     [Column("title")]
-    [MaxLength(EntityFiledValidation.TitleMaxLength)]
+    [MaxLength(EntityFiledConstants.TitleMaxLength)]
     public required string Title { get; set; }
 
     [Column("description")]
-    [MaxLength(EntityFiledValidation.DescriptionMaxLength)]
+    [MaxLength(EntityFiledConstants.DescriptionMaxLength)]
     public string? Description { get; set; }
 
     [Column("due_date")]
     public DateTime DueDate { get; set; }
+
+    [Column("priority")]
+    public Priority Priority { get; set; }
 
     [Column("is_completed")]
     public bool IsCompleted { get; set; }
