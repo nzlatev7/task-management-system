@@ -2,7 +2,7 @@
 
 namespace TaskManagementSystem.Extensions;
 
-public static class AppMappingExtensions
+public static class WebApplicationMappingExtensions
 {
     public static void MapOpenApiDisplayer(this WebApplication app)
     {

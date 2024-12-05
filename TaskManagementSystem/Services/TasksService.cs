@@ -7,6 +7,8 @@ using TaskManagementSystem.DTOs.Response;
 using TaskManagementSystem.Exceptions;
 using TaskManagementSystem.Helpers;
 using TaskManagementSystem.Interfaces;
+using TaskManagementSystem.Enums;
+using TaskManagementSystem.Extensions;
 
 namespace TaskManagementSystem.Services;
 
@@ -26,13 +28,14 @@ public sealed class TasksService : ITasksService
         var categoryExist = await _categoriesService.CategoryExistsAsync(taskDto.CategoryId);
 
         if (!categoryExist)
-            throw new BadHttpRequestException(ValidationMessages.CategoryDoesNotExist);
+            throw new BadHttpRequestException(ErrorMessageConstants.CategoryDoesNotExist);
 
         var taskEntity = new TaskEntity()
         {
             Title = taskDto.Title,
             Description = taskDto.Description,
             DueDate = taskDto.DueDate,
+            Priority = taskDto.Priority ?? Priority.Medium,
             IsCompleted = taskDto.IsCompleted,
             CategoryId = taskDto.CategoryId
         };
@@ -43,9 +46,10 @@ public sealed class TasksService : ITasksService
         return taskEntity.ToOutDto();
     }
 
-    public async Task<IEnumerable<TaskResponseDto>> GetAllTasksAsync()
+    public async Task<IEnumerable<TaskResponseDto>> GetAllTasksAsync(bool sortByPriorityAscending)
     {
         var tasks = await _dbContext.Tasks
+            .SortByPriority(sortByPriorityAscending)
             .ToOutDtos();
 
         return tasks;
@@ -56,7 +60,7 @@ public sealed class TasksService : ITasksService
         var taskEntity = await _dbContext.Tasks.FindAsync(taskId);
 
         if (taskEntity is null)
-            throw new NotFoundException(ValidationMessages.TaskDoesNotExist);
+            throw new NotFoundException(ErrorMessageConstants.TaskDoesNotExist);
 
         return taskEntity.ToOutDto();
     }
@@ -66,16 +70,17 @@ public sealed class TasksService : ITasksService
         var taskEntity = await _dbContext.Tasks.FindAsync(taskId);
 
         if (taskEntity is null)
-            throw new NotFoundException(ValidationMessages.TaskDoesNotExist);
+            throw new NotFoundException(ErrorMessageConstants.TaskDoesNotExist);
 
         var categoryExists = await _categoriesService.CategoryExistsAsync(taskDto.CategoryId);
 
         if (!categoryExists)
-            throw new BadHttpRequestException(ValidationMessages.CategoryDoesNotExist);
+            throw new BadHttpRequestException(ErrorMessageConstants.CategoryDoesNotExist);
 
         taskEntity.Title = taskDto.Title;
         taskEntity.Description = taskDto.Description;
         taskEntity.DueDate = taskDto.DueDate;
+        taskEntity.Priority = taskDto.Priority ?? Priority.Medium;
         taskEntity.IsCompleted = taskDto.IsCompleted;
         taskEntity.CategoryId = taskDto.CategoryId;
 
@@ -91,6 +96,6 @@ public sealed class TasksService : ITasksService
             .ExecuteDeleteAsync();
 
         if (deletedRows is 0)
-            throw new NotFoundException(ValidationMessages.TaskDoesNotExist);
+            throw new NotFoundException(ErrorMessageConstants.TaskDoesNotExist);
     }
 }

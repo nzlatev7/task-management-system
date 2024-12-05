@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using TaskManagementSystem.Database;
@@ -11,9 +12,11 @@ using TaskManagementSystem.Database;
 namespace TaskManagementSystem.Migrations
 {
     [DbContext(typeof(TaskManagementSystemDbContext))]
-    partial class TaskManagementSystemDbContextModelSnapshot : ModelSnapshot
+    [Migration("20241204123334_Added_Priority_Field_To_TaskEntity")]
+    partial class Added_Priority_Field_To_TaskEntity
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -47,7 +50,7 @@ namespace TaskManagementSystem.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("category", (string)null);
+                    b.ToTable("category");
                 });
 
             modelBuilder.Entity("TaskManagementSystem.Database.Models.TaskEntity", b =>
@@ -92,7 +95,7 @@ namespace TaskManagementSystem.Migrations
 
                     b.HasIndex("CategoryId");
 
-                    b.ToTable("task", (string)null);
+                    b.ToTable("task");
                 });
 
             modelBuilder.Entity("TaskManagementSystem.Database.Models.TaskEntity", b =>

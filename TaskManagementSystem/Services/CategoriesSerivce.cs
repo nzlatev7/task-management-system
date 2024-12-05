@@ -46,7 +46,7 @@ public sealed class CategoriesSerivce : ICategoriesService
         var category = await _dbContext.Categories.FindAsync(categoryId);
 
         if (category is null)
-            throw new NotFoundException(ValidationMessages.CategoryDoesNotExist);
+            throw new NotFoundException(ErrorMessageConstants.CategoryDoesNotExist);
 
         return category.ToOutDto();
     }
@@ -56,7 +56,7 @@ public sealed class CategoriesSerivce : ICategoriesService
         var category = await _dbContext.Categories.FindAsync(categoryId);
 
         if (category is null)
-            throw new NotFoundException(ValidationMessages.CategoryDoesNotExist);
+            throw new NotFoundException(ErrorMessageConstants.CategoryDoesNotExist);
 
         category.Name = categoryDto.Name;
         category.Description = categoryDto.Description;
@@ -72,14 +72,14 @@ public sealed class CategoriesSerivce : ICategoriesService
             .AnyAsync(x => x.CategoryId == categoryId);
 
         if (taskAssociatedToCategory)
-            throw new ConflictException(ValidationMessages.AssociatedTasksToCategory);
+            throw new ConflictException(ErrorMessageConstants.AssociatedTasksToCategory);
 
         var deletedRows = await _dbContext.Categories
             .Where(x => x.Id == categoryId)
             .ExecuteDeleteAsync();
 
         if (deletedRows is 0)
-            throw new NotFoundException(ValidationMessages.CategoryDoesNotExist);
+            throw new NotFoundException(ErrorMessageConstants.CategoryDoesNotExist);
     }
 
     public async Task<IEnumerable<TaskResponseDto>> GetTasksByCategoryAsync(int categoryId)
@@ -87,7 +87,7 @@ public sealed class CategoriesSerivce : ICategoriesService
         var categoryExists = await CategoryExistsAsync(categoryId);
 
         if (!categoryExists)
-            throw new NotFoundException(ValidationMessages.CategoryDoesNotExist);
+            throw new NotFoundException(ErrorMessageConstants.CategoryDoesNotExist);
 
         var tasks = await _dbContext.Tasks
             .Where(x => x.CategoryId == categoryId)
