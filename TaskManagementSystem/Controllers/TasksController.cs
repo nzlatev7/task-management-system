@@ -17,7 +17,7 @@ public class TasksController : ControllerBase
     }
 
     [HttpPost]
-    public async Task<ActionResult<TaskResponseDto>> CreateTask([FromBody] TaskRequestDto taskDto)
+    public async Task<ActionResult<TaskResponseDto>> CreateTask([FromBody] CreateTaskRequestDto taskDto)
     {
         var result = await _tasksService.CreateTaskAsync(taskDto);
 
@@ -41,7 +41,7 @@ public class TasksController : ControllerBase
     }
 
     [HttpPut("{taskId}")]
-    public async Task<ActionResult<TaskResponseDto>> UpdateTask([FromRoute] int taskId, [FromBody] TaskRequestDto taskDto)
+    public async Task<ActionResult<TaskResponseDto>> UpdateTask([FromRoute] int taskId, [FromBody] UpdateTaskRequestDto taskDto)
     {
         var result = await _tasksService.UpdateTaskAsync(taskId, taskDto);
 

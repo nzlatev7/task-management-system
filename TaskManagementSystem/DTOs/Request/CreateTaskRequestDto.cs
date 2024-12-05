@@ -6,7 +6,7 @@ using TaskManagementSystem.Enums;
 
 namespace TaskManagementSystem.DTOs.Request;
 
-public sealed class TaskRequestDto
+public class CreateTaskRequestDto
 {
     [Required]
     [MaxLength(EntityFiledConstants.TitleMaxLength)]
@@ -18,11 +18,9 @@ public sealed class TaskRequestDto
     [EnsureUtc]
     public DateTime DueDate { get; set; }
 
-    [Range(0, 2, ErrorMessage = ErrorMessageConstants.TaskPriority)]
+    [Range(0, 2, ErrorMessage = ErrorMessageConstants.TaskPriorityMustRepresentValidValues)]
     [JsonConverter(typeof(JsonStringEnumConverter))]
     public Priority? Priority { get; set; }
-
-    public bool IsCompleted { get; set; }
 
     [Range(1, int.MaxValue)]
     public int CategoryId { get; set; }

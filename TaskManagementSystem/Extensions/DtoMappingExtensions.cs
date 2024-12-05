@@ -16,6 +16,7 @@ public static class DtoMappingExtensions
             Priority = taskEntity.Priority,
             DueDate = taskEntity.DueDate,
             IsCompleted = taskEntity.IsCompleted,
+            Status = taskEntity.Status,
             CategoryId = taskEntity.CategoryId
         };
 
@@ -32,6 +33,7 @@ public static class DtoMappingExtensions
             DueDate = x.DueDate,
             Priority = x.Priority,
             IsCompleted = x.IsCompleted,
+            Status= x.Status,
             CategoryId = x.CategoryId
         }).ToListAsync();
     }

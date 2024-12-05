@@ -18,5 +18,8 @@ public sealed class TaskResponseDto
 
     public bool IsCompleted { get; set; }
 
+    [JsonConverter(typeof(JsonStringEnumConverter))]
+    public Status Status { get; set; }
+
     public int CategoryId { get; set; }
 }

@@ -28,6 +28,9 @@ public class TaskEntity
     [Column("is_completed")]
     public bool IsCompleted { get; set; }
 
+    [Column("status")]
+    public Status Status { get; set; }
+
     [Column("category_id")]
     public int CategoryId { get; set; }
 

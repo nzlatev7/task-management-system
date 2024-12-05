@@ -21,6 +21,10 @@ namespace TaskManagementSystem.Database
                 .HasSentinel(Priority.Medium)
                 .HasColumnType(EntityFiledConstants.SmallInt);
 
+            entity.Property(t => t.Status)
+                .HasDefaultValue(Status.Pending)
+                .HasColumnType(EntityFiledConstants.SmallInt);
+
             entity.HasOne(t => t.Category)
                 .WithMany(c => c.Tasks)
                 .OnDelete(DeleteBehavior.Restrict);

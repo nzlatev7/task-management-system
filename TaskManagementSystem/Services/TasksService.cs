@@ -23,7 +23,7 @@ public sealed class TasksService : ITasksService
         _categoriesService = categoriesService;
     }
 
-    public async Task<TaskResponseDto> CreateTaskAsync(TaskRequestDto taskDto)
+    public async Task<TaskResponseDto> CreateTaskAsync(CreateTaskRequestDto taskDto)
     {
         var categoryExist = await _categoriesService.CategoryExistsAsync(taskDto.CategoryId);
 
@@ -36,7 +36,8 @@ public sealed class TasksService : ITasksService
             Description = taskDto.Description,
             DueDate = taskDto.DueDate,
             Priority = taskDto.Priority ?? Priority.Medium,
-            IsCompleted = taskDto.IsCompleted,
+            IsCompleted = false,
+            Status = Status.Pending,
             CategoryId = taskDto.CategoryId
         };
 
@@ -65,12 +66,18 @@ public sealed class TasksService : ITasksService
         return taskEntity.ToOutDto();
     }
 
-    public async Task<TaskResponseDto?> UpdateTaskAsync(int taskId, TaskRequestDto taskDto)
+    public async Task<TaskResponseDto?> UpdateTaskAsync(int taskId, UpdateTaskRequestDto taskDto)
     {
         var taskEntity = await _dbContext.Tasks.FindAsync(taskId);
 
         if (taskEntity is null)
             throw new NotFoundException(ErrorMessageConstants.TaskDoesNotExist);
+
+        if (taskEntity.Status != Status.Completed && taskDto.Status == Status.Archived)
+            throw new BadHttpRequestException(ErrorMessageConstants.OnlyCompletedTaskCanBeArchived);
+
+        if (taskEntity.Status == Status.Archived && taskDto.Status != Status.Archived)
+            throw new BadHttpRequestException(ErrorMessageConstants.ArchivedTaskCanNotBeMoved);
 
         var categoryExists = await _categoriesService.CategoryExistsAsync(taskDto.CategoryId);
 
@@ -81,7 +88,8 @@ public sealed class TasksService : ITasksService
         taskEntity.Description = taskDto.Description;
         taskEntity.DueDate = taskDto.DueDate;
         taskEntity.Priority = taskDto.Priority ?? Priority.Medium;
-        taskEntity.IsCompleted = taskDto.IsCompleted;
+        taskEntity.IsCompleted = IsCompleted(taskDto.Status);
+        taskEntity.Status = taskDto.Status;
         taskEntity.CategoryId = taskDto.CategoryId;
 
         await _dbContext.SaveChangesAsync();
@@ -97,5 +105,13 @@ public sealed class TasksService : ITasksService
 
         if (deletedRows is 0)
             throw new NotFoundException(ErrorMessageConstants.TaskDoesNotExist);
+    }
+
+    private bool IsCompleted(Status taskStatus)
+    {
+        if (taskStatus == Status.Completed || taskStatus == Status.Archived)
+            return true;
+
+        return false;
     }
 }
