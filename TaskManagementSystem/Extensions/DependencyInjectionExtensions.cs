@@ -23,6 +23,7 @@ public static class DependencyInjectionExtensions
     {
         services.AddScoped<ITasksService, TasksService>();
         services.AddScoped<ICategoriesService, CategoriesSerivce>();
+        services.AddScoped<IReportsService, ReportsService>();
 
         return services;
     }   

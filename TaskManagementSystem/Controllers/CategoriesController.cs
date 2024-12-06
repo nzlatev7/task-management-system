@@ -64,4 +64,12 @@ public class CategoriesController : ControllerBase
         
         return Ok(result);
     }
+
+    [HttpGet("{categoryId}/completion")]
+    public async Task<ActionResult<CategoryCompletionStatusResponseDto>> GetCompletionStatus([FromRoute] int categoryId)
+    {
+        var result = await _categoriesService.GetCompletionStatus(categoryId);
+
+        return Ok(result);
+    }
 }
