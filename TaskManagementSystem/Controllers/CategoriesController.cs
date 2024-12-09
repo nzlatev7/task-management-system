@@ -1,4 +1,5 @@
 ﻿using Microsoft.AspNetCore.Mvc;
+using TaskManagementSystem.Constants;
 using TaskManagementSystem.DTOs.Request;
 using TaskManagementSystem.DTOs.Response;
 using TaskManagementSystem.Interfaces;
@@ -6,7 +7,6 @@ using TaskManagementSystem.Interfaces;
 namespace TaskManagementSystem.Controllers;
 
 [ApiController]
-[Route("api/categories")]
 public class CategoriesController : ControllerBase
 {
     private readonly ICategoriesService _categoriesService;
@@ -17,6 +17,7 @@ public class CategoriesController : ControllerBase
     }
 
     [HttpPost]
+    [Route(RouteConstants.Categories)]
     public async Task<ActionResult<CategoryResponseDto>> CreateCategory([FromBody] CategoryRequestDto categoryDto)
     {
         var result = await _categoriesService.CreateCategoryAsync(categoryDto);
@@ -25,6 +26,7 @@ public class CategoriesController : ControllerBase
     }
 
     [HttpGet]
+    [Route(RouteConstants.Categories)]
     public async Task<ActionResult<IEnumerable<CategoryResponseDto>>> GetAllCategories()
     {
         var result = await _categoriesService.GetAllCategoriesAsync();
@@ -32,32 +34,36 @@ public class CategoriesController : ControllerBase
         return Ok(result);
     }
 
-    [HttpGet("{categoryId}")]
-    public async Task<ActionResult<CategoryResponseDto>> GetCategoryById([FromRoute] int categoryId)
+    [HttpGet]
+    [Route(RouteConstants.CategoryById)]
+    public async Task<ActionResult<CategoryResponseDto>> GetCategoryById([FromRoute] int id)
     {
-        var result = await _categoriesService.GetCategoryByIdAsync(categoryId);
+        var result = await _categoriesService.GetCategoryByIdAsync(id);
 
         return Ok(result);
     }
 
-    [HttpPut("{categoryId}")]
-    public async Task<ActionResult<CategoryResponseDto>> UpdateCategory([FromRoute] int categoryId, [FromBody] CategoryRequestDto categoryDto)
+    [HttpPut]
+    [Route(RouteConstants.CategoryById)]
+    public async Task<ActionResult<CategoryResponseDto>> UpdateCategory([FromRoute] int id, [FromBody] CategoryRequestDto categoryDto)
     {
-        var result = await _categoriesService.UpdateCategoryAsync(categoryId, categoryDto);
+        var result = await _categoriesService.UpdateCategoryAsync(id, categoryDto);
 
         return Ok(result);
     }
 
 
-    [HttpDelete("{categoryId}")]
-    public async Task<ActionResult> DeleteCategory([FromRoute] int categoryId)
+    [HttpDelete]
+    [Route(RouteConstants.CategoryById)]
+    public async Task<ActionResult> DeleteCategory([FromRoute] int id)
     {
-        await _categoriesService.DeleteCategoryAsync(categoryId);
+        await _categoriesService.DeleteCategoryAsync(id);
 
         return Ok();
     }
 
-    [HttpGet("{categoryId}/tasks")]
+    [HttpGet]
+    [Route(RouteConstants.TasksByCategory)]
     public async Task<ActionResult<List<TaskResponseDto>>> GetTasksByCategory([FromRoute] int categoryId)
     {
         var result = await _categoriesService.GetTasksByCategoryAsync(categoryId);
@@ -65,7 +71,8 @@ public class CategoriesController : ControllerBase
         return Ok(result);
     }
 
-    [HttpGet("{categoryId}/completion")]
+    [HttpGet]
+    [Route(RouteConstants.CompletionStatus)]
     public async Task<ActionResult<CategoryCompletionStatusResponseDto>> GetCompletionStatus([FromRoute] int categoryId)
     {
         var result = await _categoriesService.GetCompletionStatus(categoryId);

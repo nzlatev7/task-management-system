@@ -7,7 +7,7 @@ namespace TaskManagementSystem.DTOs.Request;
 
 public sealed class UpdateTaskRequestDto : CreateTaskRequestDto
 {
-    [Range(1, 3, ErrorMessage = ErrorMessageConstants.TaskStatusMustRepresentValidValues)] // edit, is inclusive
+    [Range(1, 3, ErrorMessage = ErrorMessageConstants.TaskStatusMustRepresentValidValues)]
     [JsonConverter(typeof(JsonStringEnumConverter))]
     public Status Status { get; set; }
 }

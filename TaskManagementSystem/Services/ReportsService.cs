@@ -11,6 +11,7 @@ namespace TaskManagementSystem.Services;
 public class ReportsService : IReportsService
 {
     private readonly TaskManagementSystemDbContext _dbContext;
+
     public ReportsService(TaskManagementSystemDbContext dbContext)
     {
         _dbContext = dbContext;
