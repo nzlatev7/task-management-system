@@ -64,18 +64,18 @@ public class CategoriesController : ControllerBase
 
     [HttpGet]
     [Route(RouteConstants.TasksByCategory)]
-    public async Task<ActionResult<List<TaskResponseDto>>> GetTasksByCategory([FromRoute] int categoryId)
+    public async Task<ActionResult<List<TaskResponseDto>>> GetTasksByCategory([FromRoute] int id)
     {
-        var result = await _categoriesService.GetTasksByCategoryAsync(categoryId);
+        var result = await _categoriesService.GetTasksByCategoryAsync(id);
         
         return Ok(result);
     }
 
     [HttpGet]
     [Route(RouteConstants.CompletionStatus)]
-    public async Task<ActionResult<CategoryCompletionStatusResponseDto>> GetCompletionStatus([FromRoute] int categoryId)
+    public async Task<ActionResult<CategoryCompletionStatusResponseDto>> GetCompletionStatusForCategory([FromRoute] int id)
     {
-        var result = await _categoriesService.GetCompletionStatus(categoryId);
+        var result = await _categoriesService.GetCompletionStatusForCategoryAwait(id);
 
         return Ok(result);
     }
