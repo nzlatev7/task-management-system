@@ -1,4 +1,5 @@
 ﻿using Microsoft.AspNetCore.Mvc;
+using TaskManagementSystem.Constants;
 using TaskManagementSystem.DTOs.Request;
 using TaskManagementSystem.DTOs.Response;
 using TaskManagementSystem.Interfaces;
@@ -6,7 +7,6 @@ using TaskManagementSystem.Interfaces;
 namespace TaskManagementSystem.Controllers;
 
 [ApiController]
-[Route("api/tasks")]
 public class TasksController : ControllerBase
 {
     private readonly ITasksService _tasksService;
@@ -17,7 +17,8 @@ public class TasksController : ControllerBase
     }
 
     [HttpPost]
-    public async Task<ActionResult<TaskResponseDto>> CreateTask([FromBody] TaskRequestDto taskDto)
+    [Route(RouteConstants.Tasks)]
+    public async Task<ActionResult<TaskResponseDto>> CreateTask([FromBody] CreateTaskRequestDto taskDto)
     {
         var result = await _tasksService.CreateTaskAsync(taskDto);
 
@@ -25,33 +26,37 @@ public class TasksController : ControllerBase
     }
 
     [HttpGet]
-    public async Task<ActionResult<IEnumerable<TaskResponseDto>>> GetAllTasks()
+    [Route(RouteConstants.Tasks)]
+    public async Task<ActionResult<IEnumerable<TaskResponseDto>>> GetAllTasks([FromQuery] bool sortByPriorityAscending)
     {
-        var result = await _tasksService.GetAllTasksAsync();
+        var result = await _tasksService.GetAllTasksAsync(sortByPriorityAscending);
 
         return Ok(result);
     }
 
-    [HttpGet("{taskId}")]
-    public async Task<ActionResult<TaskResponseDto>> GetTaskById([FromRoute] int taskId)
+    [HttpGet]
+    [Route(RouteConstants.TaskById)]
+    public async Task<ActionResult<TaskResponseDto>> GetTaskById([FromRoute] int id)
     {
-        var result = await _tasksService.GetTaskByIdAsync(taskId);
+        var result = await _tasksService.GetTaskByIdAsync(id);
 
         return Ok(result);
     }
 
-    [HttpPut("{taskId}")]
-    public async Task<ActionResult<TaskResponseDto>> UpdateTask([FromRoute] int taskId, [FromBody] TaskRequestDto taskDto)
+    [HttpPut]
+    [Route(RouteConstants.TaskById)]
+    public async Task<ActionResult<TaskResponseDto>> UpdateTask([FromRoute] int id, [FromBody] UpdateTaskRequestDto taskDto)
     {
-        var result = await _tasksService.UpdateTaskAsync(taskId, taskDto);
+        var result = await _tasksService.UpdateTaskAsync(id, taskDto);
 
         return Ok(result);
     }
 
-    [HttpDelete("{taskId}")]
-    public async Task<ActionResult> DeleteTask([FromRoute] int taskId)
+    [HttpDelete]
+    [Route(RouteConstants.TaskById)]
+    public async Task<ActionResult> DeleteTask([FromRoute] int id)
     {
-        await _tasksService.DeleteTaskAsync(taskId);
+        await _tasksService.DeleteTaskAsync(id);
 
         return Ok();
     }

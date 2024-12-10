@@ -17,5 +17,7 @@ public interface ICategoriesService
 
     Task<IEnumerable<TaskResponseDto>> GetTasksByCategoryAsync(int categoryId);
 
+    Task<CategoryCompletionStatusResponseDto> GetCompletionStatusForCategoryAwait(int categoryId);
+
     Task<bool> CategoryExistsAsync(int categoryId);
 }
