@@ -13,5 +13,5 @@ public static class ErrorMessageConstants
     public const string TaskStatusMustRepresentValidValues = $"The filed {nameof(TaskEntity.Status)} must be a value between 1 and 3 inclusive, representing 'InProgress', 'Completed', 'Archived'. You can also use these string values ('InProgress', 'Completed', 'Archived').";
 
     public const string OnlyCompletedTaskCanBeArchived = "Only Completed Task can be Archived";
-    public const string ArchivedTaskCanNotBeMoved = "Archived Task can not be moved";
+    public const string ArchivedTaskCanNotBeEdited = "Archived Task can not be edited";
 }

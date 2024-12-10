@@ -6,9 +6,8 @@ public static class EntityHelperExtensions
 {
     public static IQueryable<TaskEntity> SortByPriority(this IQueryable<TaskEntity> tasks, bool ascending)
     {
-        if (ascending)
-            return tasks.OrderBy(x => x.Priority);
-        else
-            return tasks.OrderByDescending(x => x.Priority);
+        return ascending 
+            ? tasks.OrderBy(x => x.Priority) 
+            : tasks.OrderByDescending(x => x.Priority);
     }
 }

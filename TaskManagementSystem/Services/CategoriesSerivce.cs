@@ -85,10 +85,7 @@ public sealed class CategoriesSerivce : ICategoriesService
 
     public async Task<IEnumerable<TaskResponseDto>> GetTasksByCategoryAsync(int categoryId)
     {
-        var categoryExists = await CategoryExistsAsync(categoryId);
-
-        if (!categoryExists)
-            throw new NotFoundException(ErrorMessageConstants.CategoryDoesNotExist);
+        await ValidateCategoryExist(categoryId);
 
         var tasks = await _dbContext.Tasks
             .Where(x => x.CategoryId == categoryId)
@@ -97,34 +94,31 @@ public sealed class CategoriesSerivce : ICategoriesService
         return tasks;
     }
 
-    public async Task<CategoryCompletionStatusResponseDto> GetCompletionStatus(int categoryId)
+    public async Task<CategoryCompletionStatusResponseDto> GetCompletionStatusForCategoryAwait(int categoryId)
     {
-        var categoryStats = await _dbContext.Categories
-            .Where(x => x.Id == categoryId)
-            .Select(x => new CompletionStatusStatsDto()
-            {
-                PendingCount = x.Tasks.Where(x => x.Status == Status.Pending).Count(),
-                InProgressCount = x.Tasks.Where(x => x.Status == Status.InProgress).Count(),
-                CompletedCount = x.Tasks.Where(x => x.Status == Status.Completed).Count(),
-                ArchivedCount = x.Tasks.Where(x => x.Status == Status.Archived).Count()
-            }).FirstOrDefaultAsync();
+        await ValidateCategoryExist(categoryId);
 
-        if (categoryStats == null)
-            throw new NotFoundException(ErrorMessageConstants.CategoryDoesNotExist);
+        var statusStatistics = await GetTaskStatusStatatisticsForCategory(categoryId);
 
-        var validTasksCount = categoryStats.PendingCount + categoryStats.InProgressCount + categoryStats.CompletedCount;
-        if (validTasksCount == 0)
-            throw new ConflictException(ErrorMessageConstants.CategoryWithoutTasks);
+        var pendingCount = statusStatistics[Status.Pending];
+        var inProgressCount = statusStatistics[Status.InProgress];
+        var completedCount = statusStatistics[Status.Completed];
 
-        short completionPercentage = (short)((categoryStats.CompletedCount / (double)validTasksCount) * 100);
+        var completionPercentage = CalculateCompletionPercentage(pendingCount, inProgressCount, completedCount);
 
         await _dbContext.Database.ExecuteSqlInterpolatedAsync(
             $"UPDATE category SET completion_percentage = {completionPercentage} WHERE id = {categoryId}");
-        
+
         var result = new CategoryCompletionStatusResponseDto()
         {
             CompletionPercentage = completionPercentage,
-            CompletionStatusStats = categoryStats,
+            CompletionStatusStats = new StatusStatisticsDto()
+            {
+                NumberOfPendingTasks = pendingCount,
+                NumberOfInProgressTasks = inProgressCount,
+                NumberOfCompletedTasks = completedCount,
+                NumberOfArchivedTasks = statusStatistics[Status.Archived]
+            },
         };
 
         return result;
@@ -133,5 +127,42 @@ public sealed class CategoriesSerivce : ICategoriesService
     public async Task<bool> CategoryExistsAsync(int categoryId)
     {
         return await _dbContext.Categories.AnyAsync(c => c.Id == categoryId);
+    }
+
+    private async Task ValidateCategoryExist(int categoryId)
+    {
+        var exist = await CategoryExistsAsync(categoryId);
+        if (exist is false)
+            throw new NotFoundException(ErrorMessageConstants.CategoryDoesNotExist);
+    }
+
+    private short CalculateCompletionPercentage(int pendingCount, int inProgressCount, int completedCount)
+    {
+        var validTasksCount = pendingCount + inProgressCount + completedCount;
+        if (validTasksCount == 0)
+            throw new ConflictException(ErrorMessageConstants.CategoryWithoutTasks);
+
+        short completionPercentage = (short)((completedCount / (double)validTasksCount) * 100);
+
+        return completionPercentage;
+    }
+
+    private async Task<Dictionary<Status, int>> GetTaskStatusStatatisticsForCategory(int categoryId)
+    {
+        var taskStatusToCountForCategory = await _dbContext.Tasks
+            .Where(t => t.CategoryId == categoryId)
+            .GroupBy(x => x.Status)
+            .Select(g => new { Status = g.Key, Count = g.Count() })
+            .ToDictionaryAsync(g => g.Status, g => g.Count);
+
+        var result = new Dictionary<Status, int>
+        {
+            { Status.Pending, taskStatusToCountForCategory.GetValueOrDefault(Status.Pending, 0) },
+            { Status.InProgress, taskStatusToCountForCategory.GetValueOrDefault(Status.InProgress, 0) },
+            { Status.Completed, taskStatusToCountForCategory.GetValueOrDefault(Status.Completed, 0) },
+            { Status.Archived, taskStatusToCountForCategory.GetValueOrDefault(Status.Archived, 0) }
+        };
+
+        return result;
     }
 }

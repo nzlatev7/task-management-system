@@ -38,12 +38,33 @@ public class ReportsService : IReportsService
 
     private IQueryable<TaskEntity> ApplyFilters(IQueryable<TaskEntity> tasks, ReportTasksRequestDto reportDto)
     {
+        tasks = ApplyStatusFilter(tasks, reportDto);
+
+        tasks = ApplyPriorityFilter(tasks, reportDto);
+
+        tasks = ApplyDatesFilter(tasks, reportDto);
+
+        return tasks;
+    }
+
+    private IQueryable<TaskEntity> ApplyStatusFilter(IQueryable<TaskEntity> tasks, ReportTasksRequestDto reportDto)
+    {
         if (reportDto.Status.HasValue)
             tasks = tasks.Where(x => x.Status == reportDto.Status);
 
+        return tasks;
+    }
+
+    private IQueryable<TaskEntity> ApplyPriorityFilter(IQueryable<TaskEntity> tasks, ReportTasksRequestDto reportDto)
+    {
         if (reportDto.Priority.HasValue)
             tasks = tasks.Where(x => x.Priority == reportDto.Priority);
 
+        return tasks;
+    }
+
+    private IQueryable<TaskEntity> ApplyDatesFilter(IQueryable<TaskEntity> tasks, ReportTasksRequestDto reportDto)
+    {
         if (reportDto.DueBefore.HasValue && reportDto.DueAfter.HasValue)
             tasks = tasks.Where(x => x.DueDate < reportDto.DueBefore || x.DueDate > reportDto.DueAfter);
         else if (reportDto.DueBefore.HasValue)

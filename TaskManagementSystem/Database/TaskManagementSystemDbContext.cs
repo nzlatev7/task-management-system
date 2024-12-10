@@ -1,5 +1,4 @@
 ﻿using Microsoft.EntityFrameworkCore;
-using TaskManagementSystem.Constants;
 using TaskManagementSystem.Database.Models;
 using TaskManagementSystem.Enums;
 
@@ -19,11 +18,11 @@ namespace TaskManagementSystem.Database
             entity.Property(t => t.Priority)
                 .HasDefaultValue(Priority.Medium)
                 .HasSentinel(Priority.Medium)
-                .HasColumnType(EntityFiledConstants.SmallInt);
+                .HasColumnType("smallint");
 
             entity.Property(t => t.Status)
                 .HasDefaultValue(Status.Pending)
-                .HasColumnType(EntityFiledConstants.SmallInt);
+                .HasColumnType("smallint");
 
             entity.HasOne(t => t.Category)
                 .WithMany(c => c.Tasks)
