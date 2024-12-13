@@ -19,7 +19,7 @@ public sealed class ReportsControllerTests
         _reportsControllers = new ReportsControllers(_reportsServiceMock.Object);
     }
 
-    #region CreateTask
+    #region GetReportForTasks
 
     [Fact]
     public async Task GetReportForTasks_ReturnsOkResultWithTasksGroupedByCategory()
