@@ -3,15 +3,15 @@ using TaskManagementSystem.Constants;
 
 namespace TaskManagementSystem.Attributes;
 
-public sealed class EnsureUtcAttribute : ValidationAttribute
+public sealed class EnsureFutureDateAttribute : ValidationAttribute
 {
     protected override ValidationResult? IsValid(object? value, ValidationContext validationContext)
     {
         if (value is DateTime dateTime)
         {
-            if (dateTime.Kind != DateTimeKind.Utc)
+            if (dateTime <= DateTime.UtcNow)
             {
-                return new ValidationResult(ErrorMessageConstants.DateInUtc);
+                return new ValidationResult(ErrorMessageConstants.DateInFuture);
             }
         }
 

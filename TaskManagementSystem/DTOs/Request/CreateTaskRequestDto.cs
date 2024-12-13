@@ -16,6 +16,7 @@ public class CreateTaskRequestDto
     public string? Description { get; set; }    
 
     [EnsureUtc]
+    [EnsureFutureDate]
     public DateTime DueDate { get; set; }
 
     [Range(0, 2, ErrorMessage = ErrorMessageConstants.TaskPriorityMustRepresentValidValues)]

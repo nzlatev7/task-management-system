@@ -1,4 +1,5 @@
-﻿using TaskManagementSystem.Enums;
+﻿using TaskManagementSystem.Attributes;
+using TaskManagementSystem.Enums;
 
 namespace TaskManagementSystem.DTOs.Request;
 
@@ -8,7 +9,10 @@ public sealed class ReportTasksRequestDto
 
     public Priority? Priority { get; set; }
 
-    public DateTime? DueBefore { get; set; }
-
+    [EnsureUtc]
     public DateTime? DueAfter { get; set; }
+
+    [EnsureUtc]
+    [EnsureDueBeforeIsLaterThanDueAfter]
+    public DateTime? DueBefore { get; set; }
 }

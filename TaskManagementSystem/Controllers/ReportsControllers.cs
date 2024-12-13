@@ -18,9 +18,9 @@ public class ReportsControllers : ControllerBase
 
     [HttpGet]
     [Route(RouteConstants.ReportForTasks)]
-    public async Task<ActionResult<IEnumerable<ReportTasksResponseDto>>> GetReportForTasks([FromQuery] ReportTasksRequestDto reportDto)
+    public async Task<ActionResult<IEnumerable<ReportTasksResponseDto>>> GetReportForTasks([FromQuery] ReportTasksRequestDto reportFilters)
     {
-        var result = await _reportsService.GetReportForTasksAsync(reportDto);
+        var result = await _reportsService.GetReportForTasksAsync(reportFilters);
 
         return Ok(result);
     }

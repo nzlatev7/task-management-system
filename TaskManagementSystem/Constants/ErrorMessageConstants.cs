@@ -4,6 +4,10 @@ namespace TaskManagementSystem.Constants;
 
 public static class ErrorMessageConstants
 {
+    public const string DateInUtc = "The date must be in UTC.";
+    public const string DateInFuture = "The date must be in the future";
+    public const string DueBeforeEarlierThanDueAfter = "DueBefore cannot be earlier than the DueAfter.";
+
     public const string CategoryDoesNotExist = "Category does not exist";
     public const string TaskDoesNotExist = "Task does not exist";
     public const string AssociatedTasksToCategory = "There are associated tasks to this category. In order to delete the Category, you need to remove all tasks that are connected to it.";
