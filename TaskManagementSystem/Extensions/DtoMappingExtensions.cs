@@ -55,7 +55,8 @@ public static class DtoMappingExtensions
         return await categories.Select(x => new CategoryResponseDto
         {
             Id = x.Id,
-            Name = x.Name
+            Name = x.Name,
+            Description= x.Description
         }).ToListAsync();
     }
 }

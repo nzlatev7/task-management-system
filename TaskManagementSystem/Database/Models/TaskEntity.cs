@@ -23,7 +23,7 @@ public class TaskEntity
     public DateTime DueDate { get; set; }
 
     [Column("priority")]
-    public Priority Priority { get; set; }
+    public Priority Priority { get; set; } = Priority.Medium;
 
     [Column("is_completed")]
     public bool IsCompleted { get; set; }

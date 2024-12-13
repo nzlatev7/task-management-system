@@ -32,11 +32,13 @@ public sealed class TasksService : ITasksService
             Title = taskDto.Title,
             Description = taskDto.Description,
             DueDate = taskDto.DueDate,
-            Priority = taskDto.Priority ?? Priority.Medium,
             IsCompleted = false,
             Status = Status.Pending,
             CategoryId = taskDto.CategoryId
         };
+
+        if (taskDto.Priority.HasValue)
+            taskEntity.Priority = taskDto.Priority.Value;
 
         await _dbContext.Tasks.AddAsync(taskEntity);
         await _dbContext.SaveChangesAsync();
@@ -69,10 +71,12 @@ public sealed class TasksService : ITasksService
         taskEntity.Title = taskDto.Title;
         taskEntity.Description = taskDto.Description;
         taskEntity.DueDate = taskDto.DueDate;
-        taskEntity.Priority = taskDto.Priority ?? Priority.Medium;
         taskEntity.IsCompleted = IsCompleted(taskDto.Status);
         taskEntity.Status = taskDto.Status;
         taskEntity.CategoryId = taskDto.CategoryId;
+
+        if (taskDto.Priority.HasValue)
+            taskEntity.Priority = taskDto.Priority.Value;
 
         await _dbContext.SaveChangesAsync();
 

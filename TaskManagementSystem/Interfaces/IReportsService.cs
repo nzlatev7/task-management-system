@@ -6,5 +6,5 @@ namespace TaskManagementSystem.Interfaces;
 
 public interface IReportsService
 {
-    Task<IEnumerable<ReportTasksResponseDto>> GetReportForTasksAsync(ReportTasksRequestDto reportDto);
+    Task<IEnumerable<ReportTasksResponseDto>> GetReportForTasksAsync(ReportTasksRequestDto reportFilters);
 }
