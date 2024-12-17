@@ -24,6 +24,9 @@ namespace TaskManagementSystem.Database
                 .HasDefaultValue(Status.Pending)
                 .HasColumnType("smallint");
 
+            entity.HasIndex(t => t.Status)
+                .HasDatabaseName("IX_task_status");
+
             entity.HasOne(t => t.Category)
                 .WithMany(c => c.Tasks)
                 .OnDelete(DeleteBehavior.Restrict);

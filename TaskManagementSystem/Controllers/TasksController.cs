@@ -27,9 +27,9 @@ public class TasksController : ControllerBase
 
     [HttpGet]
     [Route(RouteConstants.Tasks)]
-    public async Task<ActionResult<IEnumerable<TaskResponseDto>>> GetAllTasks([FromQuery] bool sortByPriorityAscending)
+    public async Task<ActionResult<IEnumerable<TaskResponseDto>>> GetAllTasks([FromQuery] GetAllTasksRequestDto sortBy)
     {
-        var result = await _tasksService.GetAllTasksAsync(sortByPriorityAscending);
+        var result = await _tasksService.GetAllTasksAsync(sortBy);
 
         return Ok(result);
     }

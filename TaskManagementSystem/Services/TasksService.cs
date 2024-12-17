@@ -35,11 +35,21 @@ public sealed class TasksService : ITasksService
         return taskEntity.ToOutDto();
     }
 
-    public async Task<IEnumerable<TaskResponseDto>> GetAllTasksAsync(bool sortByPriorityAscending)
+    public async Task<IEnumerable<TaskResponseDto>> GetAllTasksAsync(GetAllTasksRequestDto sortByInstructions)
     {
         var tasks = await _dbContext.Tasks
-            .SortByPriority(sortByPriorityAscending)
-            .ToOutDtos();
+            .SortBy(sortByInstructions)
+            .Select(x => new TaskResponseDto
+            {
+                Id = x.Id,
+                Title = x.Title,
+                Description = x.Description,
+                DueDate = x.DueDate,
+                Priority = x.Priority,
+                IsCompleted = x.IsCompleted,
+                Status = x.Status,
+                CategoryId = x.CategoryId
+            }).ToListAsync();
 
         return tasks;
     }

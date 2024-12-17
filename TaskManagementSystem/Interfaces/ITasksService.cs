@@ -7,7 +7,7 @@ public interface ITasksService
 {
     Task<TaskResponseDto> CreateTaskAsync(CreateTaskRequestDto taskDto);
 
-    Task<IEnumerable<TaskResponseDto>> GetAllTasksAsync(bool sortByPriorityAscending);
+    Task<IEnumerable<TaskResponseDto>> GetAllTasksAsync(GetAllTasksRequestDto sortBy);
 
     Task<TaskResponseDto> GetTaskByIdAsync(int taskId);
 

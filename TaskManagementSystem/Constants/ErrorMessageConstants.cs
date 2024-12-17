@@ -1,4 +1,5 @@
 ﻿using TaskManagementSystem.Database.Models;
+using TaskManagementSystem.DTOs.Request;
 
 namespace TaskManagementSystem.Constants;
 
@@ -15,6 +16,7 @@ public static class ErrorMessageConstants
     
     public const string TaskPriorityMustRepresentValidValues = $"The field {nameof(TaskEntity.Priority)} must have a value between 0 and 2 inclusive, representing 'Low', 'Medium', 'High'. You can also initialize it using these string values ('Low', 'Medium', 'High'). If no {nameof(TaskEntity.Priority)} is specified, the default value is 'Medium'.";
     public const string TaskStatusMustRepresentValidValues = $"The filed {nameof(TaskEntity.Status)} must be a value between 1 and 3 inclusive, representing 'InProgress', 'Completed', 'Archived'. You can also use these string values ('InProgress', 'Completed', 'Archived').";
+    public const string SortingTaskPropertyMustRepresentValidValues = $"The filed {nameof(GetAllTasksRequestDto.Property)} must have a value between 0 and 5 inclusive, reresenting 'Id', 'Title', 'DueDate', 'Priority', 'Status', 'CategoryId'. You can also initialize it using these string values ('Id', 'Title', 'DueDate', 'Priority', 'Status', 'CategoryId').";
 
     public const string OnlyCompletedTaskCanBeArchived = "Only Completed Task can be Archived";
     public const string ArchivedTaskCanNotBeEdited = "Archived Task can not be edited";
