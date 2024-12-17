@@ -27,7 +27,7 @@ public sealed class ReportsServiceTests : IClassFixture<TestDatabaseFixture>, IA
 
     public async Task InitializeAsync()
     {
-        categories = await _dataGenerator.InsertCategories(count: 2);
+        categories = await _dataGenerator.InsertCategoriesAsync(count: 2);
     }
 
     public async Task DisposeAsync()
@@ -41,11 +41,11 @@ public sealed class ReportsServiceTests : IClassFixture<TestDatabaseFixture>, IA
     public async Task GetReportForTasksAsync_AllFiltersProvided_ReturnsFilteredTasksGroupedByCategory()
     {
         // Arrange
-        var notMatchingTask1 = await _dataGenerator.InsertTasks(count: 1, categories[0].Id, tasksPriority: Priority.Medium, tasksStatus: Status.InProgress);
-        var notMatchingTask2 = await _dataGenerator.InsertTasks(count: 1, categories[0].Id, tasksPriority: Priority.Low, tasksStatus: Status.Pending);
+        var notMatchingTask1 = await _dataGenerator.InsertTasksAsync(count: 1, categories[0].Id, tasksPriority: Priority.Medium, tasksStatus: Status.InProgress);
+        var notMatchingTask2 = await _dataGenerator.InsertTasksAsync(count: 1, categories[0].Id, tasksPriority: Priority.Low, tasksStatus: Status.Pending);
 
-        var targetTasks1 = await _dataGenerator.InsertTasks(count: 4, categories[0].Id, tasksPriority: Priority.Low, tasksStatus: Status.InProgress);
-        var targetTasks2 = await _dataGenerator.InsertTasks(count: 4, categories[1].Id, tasksPriority: Priority.Low, tasksStatus: Status.InProgress);
+        var targetTasks1 = await _dataGenerator.InsertTasksAsync(count: 4, categories[0].Id, tasksPriority: Priority.Low, tasksStatus: Status.InProgress);
+        var targetTasks2 = await _dataGenerator.InsertTasksAsync(count: 4, categories[1].Id, tasksPriority: Priority.Low, tasksStatus: Status.InProgress);
 
         var filtersDto = new ReportTasksRequestDto
         {
@@ -77,10 +77,10 @@ public sealed class ReportsServiceTests : IClassFixture<TestDatabaseFixture>, IA
     public async Task GetReportForTasksAsync_FiltersNotProvided_ReturnsAllTasksGroupedByCategory()
     {
         // Arrange
-        var targetTasks1 = await _dataGenerator.InsertTasks(count: 1, categories[0].Id, tasksPriority: Priority.Medium, tasksStatus: Status.InProgress);
+        var targetTasks1 = await _dataGenerator.InsertTasksAsync(count: 1, categories[0].Id, tasksPriority: Priority.Medium, tasksStatus: Status.InProgress);
 
-        var targetTasks2 = await _dataGenerator.InsertTasks(count: 4, categories[0].Id, tasksPriority: Priority.Low, tasksStatus: Status.InProgress);
-        var targetTasks3 = await _dataGenerator.InsertTasks(count: 4, categories[1].Id, tasksPriority: Priority.Low, tasksStatus: Status.Completed);
+        var targetTasks2 = await _dataGenerator.InsertTasksAsync(count: 4, categories[0].Id, tasksPriority: Priority.Low, tasksStatus: Status.InProgress);
+        var targetTasks3 = await _dataGenerator.InsertTasksAsync(count: 4, categories[1].Id, tasksPriority: Priority.Low, tasksStatus: Status.Completed);
 
         // Act
         var tasksReport = await _reportsService.GetReportForTasksAsync(new ReportTasksRequestDto());

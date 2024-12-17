@@ -15,30 +15,19 @@ namespace TaskManagementSystem.Services;
 public sealed class TasksService : ITasksService
 {
     private readonly TaskManagementSystemDbContext _dbContext;
-    private readonly ICategoriesService _categoriesService;
+    private readonly ICategoryRepository _categoryRepository;
 
-    public TasksService(TaskManagementSystemDbContext dbContext, ICategoriesService categoriesService)
+    public TasksService(TaskManagementSystemDbContext dbContext, ICategoryRepository categoryRepository)
     {
         _dbContext = dbContext;
-        _categoriesService = categoriesService;
+        _categoryRepository = categoryRepository;
     }
 
     public async Task<TaskResponseDto> CreateTaskAsync(CreateTaskRequestDto taskDto)
     {
-        await ValidatateCategoryExists(taskDto.CategoryId);
+        await ValidatateCategoryExistsAsync(taskDto.CategoryId);
 
-        var taskEntity = new TaskEntity()
-        {
-            Title = taskDto.Title,
-            Description = taskDto.Description,
-            DueDate = taskDto.DueDate,
-            IsCompleted = false,
-            Status = Status.Pending,
-            CategoryId = taskDto.CategoryId
-        };
-
-        if (taskDto.Priority.HasValue)
-            taskEntity.Priority = taskDto.Priority.Value;
+        var taskEntity = taskDto.ToTaskEntityForCreate();
 
         await _dbContext.Tasks.AddAsync(taskEntity);
         await _dbContext.SaveChangesAsync();
@@ -57,26 +46,20 @@ public sealed class TasksService : ITasksService
 
     public async Task<TaskResponseDto> GetTaskByIdAsync(int taskId)
     {
-        var taskEntity = await GetTaskEntityAsync(taskId);
+        var taskEntity = await _dbContext.Tasks.FindAsync(taskId)
+            ?? throw new NotFoundException(ErrorMessageConstants.TaskDoesNotExist);
 
         return taskEntity.ToOutDto();
     }
 
     public async Task<TaskResponseDto> UpdateTaskAsync(int taskId, UpdateTaskRequestDto taskDto)
     {
-        var taskEntity = await GetTaskEntityAsync(taskId);
+        var taskEntity = await _dbContext.Tasks.FindAsync(taskId)
+            ?? throw new NotFoundException(ErrorMessageConstants.TaskDoesNotExist);
 
-        await ValidateTaskDataForUpdate(taskEntity, taskDto);
+        await ValidateTaskDataForUpdateAsync(taskEntity, taskDto);
 
-        taskEntity.Title = taskDto.Title;
-        taskEntity.Description = taskDto.Description;
-        taskEntity.DueDate = taskDto.DueDate;
-        taskEntity.IsCompleted = IsCompleted(taskDto.Status);
-        taskEntity.Status = taskDto.Status;
-        taskEntity.CategoryId = taskDto.CategoryId;
-
-        if (taskDto.Priority.HasValue)
-            taskEntity.Priority = taskDto.Priority.Value;
+        taskDto.UpdateTaskEntity(taskEntity);
 
         await _dbContext.SaveChangesAsync();
 
@@ -93,30 +76,15 @@ public sealed class TasksService : ITasksService
             throw new NotFoundException(ErrorMessageConstants.TaskDoesNotExist);
     }
 
-    private async Task<TaskEntity> GetTaskEntityAsync(int taskId)
+    private async Task ValidatateCategoryExistsAsync(int categoryId)
     {
-        var taskEntity = await _dbContext.Tasks.FindAsync(taskId) 
-            ?? throw new NotFoundException(ErrorMessageConstants.TaskDoesNotExist);
-
-        return taskEntity;
-    }
-
-    private async Task ValidatateCategoryExists(int categoryId)
-    {
-        var categoryExists = await _categoriesService.CategoryExistsAsync(categoryId);
+        var categoryExists = await _categoryRepository.CategoryExistsAsync(categoryId);
 
         if (!categoryExists)
             throw new BadHttpRequestException(ErrorMessageConstants.CategoryDoesNotExist);
     }
 
-    private bool IsCompleted(Status taskStatus)
-    {
-        return taskStatus == Status.Completed || taskStatus == Status.Archived
-            ? true
-            : false;
-    }
-
-    private async Task ValidateTaskDataForUpdate(TaskEntity taskEntity, UpdateTaskRequestDto taskDto)
+    private async Task ValidateTaskDataForUpdateAsync(TaskEntity taskEntity, UpdateTaskRequestDto taskDto)
     {
         var canArchivedBeEdited = taskEntity.Status == Status.Archived;
         if (canArchivedBeEdited)
@@ -126,6 +94,6 @@ public sealed class TasksService : ITasksService
         if (canArchiveEntity)
             throw new BadHttpRequestException(ErrorMessageConstants.OnlyCompletedTaskCanBeArchived);
 
-        await ValidatateCategoryExists(taskDto.CategoryId);
+        await ValidatateCategoryExistsAsync(taskDto.CategoryId);
     }
 }

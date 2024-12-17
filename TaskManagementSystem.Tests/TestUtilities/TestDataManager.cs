@@ -2,6 +2,7 @@
 using TaskManagementSystem.Database;
 using TaskManagementSystem.Enums;
 using Microsoft.EntityFrameworkCore;
+using System.Threading.Tasks;
 
 namespace TaskManagementSystem.Tests.TestUtilities;
 
@@ -14,7 +15,24 @@ public class TestDataManager
         _dbContext = dbContext;
     }
 
-    public async Task<List<TaskEntity>> InsertTasks(
+    public async Task<TaskEntity> InsertTaskAsync(string title, DateTime dueDate, Priority priority, Status status, int categoryId)
+    {
+        var task = new TaskEntity()
+        {
+            Title = title,
+            DueDate = dueDate,
+            Priority = priority,
+            Status = status,
+            CategoryId = categoryId
+        };
+
+        await _dbContext.AddAsync(task);
+        await _dbContext.SaveChangesAsync();
+
+        return task;
+    }
+
+    public async Task<List<TaskEntity>> InsertTasksAsync(
         int count,
         int categoryId,
         Priority tasksPriority = Priority.Medium,
@@ -47,7 +65,7 @@ public class TestDataManager
         return tasks;
     }
 
-    public async Task<int> InsertCategory()
+    public async Task<int> InsertCategoryAsync()
     {
         var category = new CategoryEntity()
         {
@@ -61,7 +79,7 @@ public class TestDataManager
         return category.Id;
     }
 
-    public async Task<List<CategoryEntity>> InsertCategories(int count)
+    public async Task<List<CategoryEntity>> InsertCategoriesAsync(int count)
     {
         var categories = new List<CategoryEntity>();
 

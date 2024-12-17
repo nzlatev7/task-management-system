@@ -3,6 +3,7 @@ using TaskManagementSystem.Database;
 using TaskManagementSystem.ExceptionHandlers;
 using TaskManagementSystem.Exceptions;
 using TaskManagementSystem.Interfaces;
+using TaskManagementSystem.Repositories;
 using TaskManagementSystem.Services;
 
 namespace TaskManagementSystem.Extensions;
@@ -19,6 +20,13 @@ public static class DependencyInjectionExtensions
         return services;
     }
 
+    public static IServiceCollection AddRepositories(this IServiceCollection services)
+    {
+        services.AddScoped<ICategoryRepository, CategoryRepository>();
+
+        return services;
+    }
+
     public static IServiceCollection AddApplication(this IServiceCollection services)
     {
         services.AddScoped<ITasksService, TasksService>();
@@ -26,7 +34,7 @@ public static class DependencyInjectionExtensions
         services.AddScoped<IReportsService, ReportsService>();
 
         return services;
-    }   
+    }
 
     public static IServiceCollection AddErrorHandling(this IServiceCollection services)
     {

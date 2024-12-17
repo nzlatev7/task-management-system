@@ -33,7 +33,7 @@ public sealed class TasksControllerTests
             Priority = Priority.Low,
             CategoryId = 1
         };
-
+        
         var expectedTask = new TaskResponseDto()
         {
             Title = taskForCreate.Title,
@@ -63,23 +63,28 @@ public sealed class TasksControllerTests
     public async Task GetAllTasks_SortByPriorityAscendingEqualsTrue_ReturnsOkResultWithAllTasks_OrderedByPriorityAscending()
     {
         // Arrange
-        var sortByPriorityAscending = true;
         var expectedResponse = new List<TaskResponseDto>()
         {
             new TaskResponseDto() {Title = "1"},
             new TaskResponseDto() {Title = "2"}
         };
 
-        _tasksServiceMock.Setup(service => service.GetAllTasksAsync(sortByPriorityAscending))
+        var instructions = new GetAllTasksRequestDto()
+        {
+            Property = SortingTaskProperty.Title,
+            IsAscending = true
+        };
+
+        _tasksServiceMock.Setup(service => service.GetAllTasksAsync(instructions))
             .ReturnsAsync(expectedResponse);
 
         // Act
-        var result = await _tasksController.GetAllTasks(sortByPriorityAscending);
+        var result = await _tasksController.GetAllTasks(instructions);
 
         // Assert
         var okResult = Assert.IsType<OkObjectResult>(result.Result);
         Assert.Equal(expectedResponse, okResult.Value);
-        _tasksServiceMock.Verify(services => services.GetAllTasksAsync(sortByPriorityAscending), Times.Once);
+        _tasksServiceMock.Verify(services => services.GetAllTasksAsync(instructions), Times.Once);
     }
 
     #endregion
