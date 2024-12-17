@@ -1,5 +1,6 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using TaskManagementSystem.Database.Models;
+using TaskManagementSystem.Enums;
 
 namespace TaskManagementSystem.Database
 {
@@ -12,8 +13,18 @@ namespace TaskManagementSystem.Database
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
-            modelBuilder.Entity<TaskEntity>()
-                .HasOne(t => t.Category)
+            var entity = modelBuilder.Entity<TaskEntity>();
+
+            entity.Property(t => t.Priority)
+                .HasDefaultValue(Priority.Medium)
+                .HasSentinel(Priority.Medium)
+                .HasColumnType("smallint");
+
+            entity.Property(t => t.Status)
+                .HasDefaultValue(Status.Pending)
+                .HasColumnType("smallint");
+
+            entity.HasOne(t => t.Category)
                 .WithMany(c => c.Tasks)
                 .OnDelete(DeleteBehavior.Restrict);
         }

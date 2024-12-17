@@ -11,11 +11,13 @@ public interface ICategoriesService
 
     Task<CategoryResponseDto> GetCategoryByIdAsync(int categoryId);
 
-    Task<CategoryResponseDto?> UpdateCategoryAsync(int categoryId, CategoryRequestDto categoryDto);
+    Task<CategoryResponseDto> UpdateCategoryAsync(int categoryId, CategoryRequestDto categoryDto);
 
     Task DeleteCategoryAsync(int categoryId);
 
     Task<IEnumerable<TaskResponseDto>> GetTasksByCategoryAsync(int categoryId);
+
+    Task<CategoryCompletionStatusResponseDto> GetCompletionStatusForCategoryAwait(int categoryId);
 
     Task<bool> CategoryExistsAsync(int categoryId);
 }

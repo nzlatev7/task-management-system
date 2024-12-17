@@ -13,8 +13,10 @@ public static class DtoMappingExtensions
             Id = taskEntity.Id,
             Title = taskEntity.Title,
             Description = taskEntity.Description,
+            Priority = taskEntity.Priority,
             DueDate = taskEntity.DueDate,
             IsCompleted = taskEntity.IsCompleted,
+            Status = taskEntity.Status,
             CategoryId = taskEntity.CategoryId
         };
 
@@ -29,7 +31,9 @@ public static class DtoMappingExtensions
             Title = x.Title,
             Description = x.Description,
             DueDate = x.DueDate,
+            Priority = x.Priority,
             IsCompleted = x.IsCompleted,
+            Status= x.Status,
             CategoryId = x.CategoryId
         }).ToListAsync();
     }
@@ -51,7 +55,8 @@ public static class DtoMappingExtensions
         return await categories.Select(x => new CategoryResponseDto
         {
             Id = x.Id,
-            Name = x.Name
+            Name = x.Name,
+            Description= x.Description
         }).ToListAsync();
     }
 }
