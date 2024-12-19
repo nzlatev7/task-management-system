@@ -1,13 +1,48 @@
-﻿using TaskManagementSystem.Database.Models;
+﻿using System.Linq.Expressions;
+using TaskManagementSystem.Database.Models;
+using TaskManagementSystem.DTOs.Request;
+using TaskManagementSystem.Enums;
 
 namespace TaskManagementSystem.Extensions;
 
 public static class EntityHelperExtensions
 {
-    public static IQueryable<TaskEntity> SortByPriority(this IQueryable<TaskEntity> tasks, bool ascending)
+    public static IQueryable<TaskEntity> SortBy(this IQueryable<TaskEntity> tasks, GetAllTasksRequestDto sortByInstructions)
     {
-        return ascending 
-            ? tasks.OrderBy(x => x.Priority) 
-            : tasks.OrderByDescending(x => x.Priority);
+        switch (sortByInstructions.Property)
+        {
+            case SortingTaskProperty.Id:
+                tasks = tasks.OrderBy(x => x.Id, sortByInstructions.IsAscending);
+                break;
+            case SortingTaskProperty.Title:
+                tasks = tasks.OrderBy(x => x.Title, sortByInstructions.IsAscending);
+                break;
+            case SortingTaskProperty.DueDate:
+                tasks = tasks.OrderBy(x => x.DueDate, sortByInstructions.IsAscending);
+                break;
+            case SortingTaskProperty.Priority:
+                tasks = tasks.OrderBy(x => x.Priority, sortByInstructions.IsAscending);
+                break;
+            case SortingTaskProperty.Status:
+                tasks = tasks.OrderBy(x => x.Status, sortByInstructions.IsAscending);
+                break;
+            case SortingTaskProperty.CategoryId:
+                tasks = tasks.OrderBy(x => x.CategoryId, sortByInstructions.IsAscending);
+                break;
+            default:
+                break;
+        }
+
+        return tasks;
+    }
+
+    private static IQueryable<TSource> OrderBy<TSource, TKey>(
+        this IQueryable<TSource> source,
+        Expression<Func<TSource, TKey>> keySelector,
+        bool isAscending)
+    { 
+        return isAscending 
+            ? source.OrderBy(keySelector) 
+            : source.OrderByDescending(keySelector);
     }
 }

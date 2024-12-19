@@ -19,9 +19,7 @@ public class ReportsService : IReportsService
 
     public async Task<IEnumerable<ReportTasksResponseDto>> GetReportForTasksAsync(ReportTasksRequestDto reportFilters)
     {
-        IQueryable<TaskEntity> tasks = _dbContext.Tasks;
-
-        tasks = GetTasksWithAppliedFilters(tasks, reportFilters);
+        IQueryable<TaskEntity> tasks = ApplyFilters(_dbContext.Tasks, reportFilters);
 
         var result = await tasks
             .GroupBy(x => x.CategoryId)
@@ -36,7 +34,7 @@ public class ReportsService : IReportsService
         return result;
     }
 
-    private IQueryable<TaskEntity> GetTasksWithAppliedFilters(IQueryable<TaskEntity> tasks, ReportTasksRequestDto reportDto)
+    private IQueryable<TaskEntity> ApplyFilters(IQueryable<TaskEntity> tasks, ReportTasksRequestDto reportDto)
     {
         if (reportDto.Status.HasValue)
         {
