@@ -6,6 +6,21 @@ namespace TaskManagementSystem.Extensions;
 
 public static class EntityMappingExtensions
 {
+    public static CategoryEntity ToCategoryEntityForCreate(this CategoryRequestDto categoryDto)
+    {
+        return new CategoryEntity()
+        {
+            Name = categoryDto.Name,
+            Description = categoryDto.Description
+        };
+    }
+
+    public static void UpdateCategoryEntity(this CategoryRequestDto categoryDto, CategoryEntity category)
+    {
+        category.Name = categoryDto.Name;
+        category.Description = categoryDto.Description;
+    }
+
     public static TaskEntity ToTaskEntityForCreate(this CreateTaskRequestDto taskDto)
     {
         var taskEntity = new TaskEntity()
@@ -24,15 +39,6 @@ public static class EntityMappingExtensions
         return taskEntity;
     }
 
-    public static CategoryEntity ToCategoryEntityForCreate(this CategoryRequestDto categoryDto)
-    {
-        return new CategoryEntity()
-        {
-            Name = categoryDto.Name,
-            Description = categoryDto.Description
-        };
-    }
-
     public static void UpdateTaskEntity(this UpdateTaskRequestDto taskDto, TaskEntity currentTask)
     {
         currentTask.Title = taskDto.Title;
@@ -46,10 +52,19 @@ public static class EntityMappingExtensions
             currentTask.Priority = taskDto.Priority.Value;
     }
 
-    public static void UpdateCategoryEntity(this CategoryRequestDto categoryDto, CategoryEntity category)
+    public static DeletedTaskEntity ToDeletedTaskEntity(this TaskEntity task)
     {
-        category.Name = categoryDto.Name;
-        category.Description = categoryDto.Description;
+        var taskEntity = new DeletedTaskEntity()
+        {
+            TaskId = task.Id,
+            Title = task.Title,
+            Description = task.Description,
+            DueDate = task.DueDate,
+            Status = task.Status,
+            CategoryId = task.CategoryId
+        };
+
+        return taskEntity;
     }
 
     private static bool IsCompleted(Status taskStatus)

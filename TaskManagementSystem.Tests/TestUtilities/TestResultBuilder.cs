@@ -82,6 +82,20 @@ public static class TestResultBuilder
         return reportResult;
     }
 
+    public static DeletedTaskEntity GetExpectedDeletedTask(TaskEntity task)
+    {
+        return new DeletedTaskEntity()
+        {
+            TaskId = task.Id,
+            Title = task.Title,
+            Description = task.Description,
+            DueDate = task.DueDate,
+            Priority = task.Priority,
+            Status = task.Status,
+            CategoryId = task.CategoryId
+        };
+    }
+
     private static TaskResponseDto CreateBaseTaskResponse(
         int id,
         string title,

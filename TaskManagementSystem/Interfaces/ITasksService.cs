@@ -13,5 +13,7 @@ public interface ITasksService
 
     Task<TaskResponseDto> UpdateTaskAsync(int taskId, UpdateTaskRequestDto taskDto);
 
+    Task UnlockTaskAsync(int taskId, UnlockTaskRequestDto unlockDto);
+
     Task DeleteTaskAsync(int taskId);
 }

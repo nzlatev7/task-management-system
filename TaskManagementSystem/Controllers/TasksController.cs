@@ -52,6 +52,15 @@ public class TasksController : ControllerBase
         return Ok(result);
     }
 
+    [HttpPatch]
+    [Route(RouteConstants.TaskById)]
+    public async Task<ActionResult> UnlockTask([FromRoute] int id, [FromBody] UnlockTaskRequestDto unlockDto)
+    {
+        await _tasksService.UnlockTaskAsync(id, unlockDto);
+        
+        return NoContent();
+    }
+
     [HttpDelete]
     [Route(RouteConstants.TaskById)]
     public async Task<ActionResult> DeleteTask([FromRoute] int id)

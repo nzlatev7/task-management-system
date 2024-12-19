@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 using Moq;
 using TaskManagementSystem.Constants;
 using TaskManagementSystem.Database;
@@ -19,6 +20,7 @@ public sealed class TasksServiceTests : IClassFixture<TestDatabaseFixture>, IAsy
     private readonly TaskManagementSystemDbContext _dbContext;
     private readonly Mock<ICategoryRepository> _categoryRepositoryMock;
     private readonly TestDataManager _dataGenerator;
+    private readonly Mock<ILogger<TasksService>> _loggerMock;
 
     private readonly TasksService _tasksService;
 
@@ -31,8 +33,9 @@ public sealed class TasksServiceTests : IClassFixture<TestDatabaseFixture>, IAsy
 
         _dataGenerator = new TestDataManager(_dbContext);
         _categoryRepositoryMock = new Mock<ICategoryRepository>();
+        _loggerMock = new Mock<ILogger<TasksService>>();
 
-        _tasksService = new TasksService(_dbContext, _categoryRepositoryMock.Object);
+        _tasksService = new TasksService(_dbContext, _categoryRepositoryMock.Object, _loggerMock.Object);
     }
 
     public async Task InitializeAsync()
@@ -81,7 +84,10 @@ public sealed class TasksServiceTests : IClassFixture<TestDatabaseFixture>, IAsy
         Assert.NotNull(savedTask);
         Assert.Equivalent(expectedTask, savedTask);
 
-        _categoryRepositoryMock.Verify(c => c.CategoryExistsAsync(It.IsAny<int>()), Times.Once);
+        _categoryRepositoryMock.VerifyCallForCategoryExists();
+
+        var message = string.Format(LoggingMessageConstants.TaskCreatedSuccessfully, resultTask.Id, resultTask.CategoryId);
+        _loggerMock.VerifyCallForLogInformationAndMessage(message);
     }
 
     [Fact]
@@ -205,10 +211,10 @@ public sealed class TasksServiceTests : IClassFixture<TestDatabaseFixture>, IAsy
     #region UpdateTask
 
     [Fact]
-    public async Task UpdateTaskAsync_TaskExists_CategoryExists_TaskUpdated_ReturnsUpdatedTask()
+    public async Task UpdateTaskAsync_TaskExists_ValidTaskStatus_CategoryExists_TaskUpdated_ReturnsUpdatedTask()
     {
         // Arrange
-        var tasks = await _dataGenerator.InsertTasksAsync(count: 2, targetCategoryId);
+        var tasks = await _dataGenerator.InsertTasksAsync(count: 2, targetCategoryId, tasksStatus: Status.InProgress);
         var targetTask = tasks[0];
 
         var taskDto = new UpdateTaskRequestDto()
@@ -240,7 +246,10 @@ public sealed class TasksServiceTests : IClassFixture<TestDatabaseFixture>, IAsy
         Assert.NotNull(updatedTask);
         Assert.Equivalent(expectedTask, updatedTask);
 
-        _categoryRepositoryMock.Verify(c => c.CategoryExistsAsync(It.IsAny<int>()), Times.Once);
+        _categoryRepositoryMock.VerifyCallForCategoryExists();
+
+        var message = string.Format(LoggingMessageConstants.TaskUpdatedSuccessfully, resultTask.Id);
+        _loggerMock.VerifyCallForLogInformationAndMessage(message);
     }
 
     [Fact]
@@ -260,7 +269,7 @@ public sealed class TasksServiceTests : IClassFixture<TestDatabaseFixture>, IAsy
     }
 
     [Fact]
-    public async Task UpdateTaskAsync_TaskExists_TargetedArchivedTask_ThrowsBadHttpRequestException()
+    public async Task UpdateTaskAsync_TaskExists_TargetedArchivedTask_ThrowsConflictException()
     {
         // Arrange
         var tasks = await _dataGenerator.InsertTasksAsync(count: 1, targetCategoryId, tasksStatus: Status.Archived);
@@ -271,12 +280,12 @@ public sealed class TasksServiceTests : IClassFixture<TestDatabaseFixture>, IAsy
         };
 
         // Act & Assert
-        var exception = await Assert.ThrowsAsync<BadHttpRequestException>(() => _tasksService.UpdateTaskAsync(tasks[0].Id, taskDto));
+        var exception = await Assert.ThrowsAsync<ConflictException>(() => _tasksService.UpdateTaskAsync(tasks[0].Id, taskDto));
         Assert.Equal(ErrorMessageConstants.ArchivedTaskCanNotBeEdited, exception.Message);
     }
 
     [Fact]
-    public async Task UpdateTaskAsync_TaskExists_NotCompletedTask_MovedToArchived_ThrowsBadHttpRequestException()
+    public async Task UpdateTaskAsync_TaskExists_NotCompletedTask_MovedToArchived_ThrowsConflictException()
     {
         // Arrange
         var tasks = await _dataGenerator.InsertTasksAsync(count: 1, targetCategoryId, tasksStatus: Status.Pending);
@@ -289,8 +298,25 @@ public sealed class TasksServiceTests : IClassFixture<TestDatabaseFixture>, IAsy
         };
 
         // Act & Assert
-        var exception = await Assert.ThrowsAsync<BadHttpRequestException>(() => _tasksService.UpdateTaskAsync(tasks[0].Id, taskDto));
+        var exception = await Assert.ThrowsAsync<ConflictException>(() => _tasksService.UpdateTaskAsync(tasks[0].Id, taskDto));
         Assert.Equal(ErrorMessageConstants.OnlyCompletedTaskCanBeArchived, exception.Message);
+    }
+
+    [Fact]
+    public async Task UpdateTaskAsync_TaskExists_TargetedLockedTask_ThrowsConflictException()
+    {
+        // Arrange
+        var tasks = await _dataGenerator.InsertTasksAsync(count: 1, targetCategoryId, tasksStatus: Status.Locked);
+        var targetTask = tasks[0];
+
+        var taskDto = new UpdateTaskRequestDto()
+        {
+            Title = "Updated Title",
+        };
+
+        // Act & Assert
+        var exception = await Assert.ThrowsAsync<ConflictException>(() => _tasksService.UpdateTaskAsync(tasks[0].Id, taskDto));
+        Assert.Equal(ErrorMessageConstants.LockedTaskCanNotBeEdited, exception.Message);
     }
 
     [Fact]
@@ -367,13 +393,78 @@ public sealed class TasksServiceTests : IClassFixture<TestDatabaseFixture>, IAsy
 
     #endregion
 
+    #region UnlockTask
+
+    [Fact]
+    public async Task UnlockTaskAsync_TaskExists_TaskLocked_ChangesTaskStatus()
+    {
+        // Arrange
+        var tasks = await _dataGenerator.InsertTasksAsync(count: 2, targetCategoryId, tasksStatus: Status.Locked);
+        var targetTaskId = tasks[0].Id;
+
+        var expectedStatus = Status.Completed;
+        var unlockDto = new UnlockTaskRequestDto()
+        {
+            Status = expectedStatus,
+        };
+
+        // Act
+        await _tasksService.UnlockTaskAsync(targetTaskId, unlockDto);
+
+        // Assert
+        var updatedStatus = await _dbContext.Tasks
+            .Where(x => x.Id == targetTaskId)
+            .Select(x => x.Status)
+            .FirstOrDefaultAsync();
+
+        Assert.Equal(expectedStatus, updatedStatus);
+
+        var message = string.Format(LoggingMessageConstants.TaskUnlockedSuccessfully, targetTaskId);
+        _loggerMock.VerifyCallForLogInformationAndMessage(message);
+    }
+
+    [Fact]
+    public async Task UnlockTaskAsync_TaskDoesNotExists_ThrowsNotFoundException()
+    {
+        // Arrange
+        var tasks = await _dataGenerator.InsertTasksAsync(count: 2, targetCategoryId, tasksStatus: Status.Locked);
+
+        var unlockDto = new UnlockTaskRequestDto()
+        {
+            Status = Status.Completed
+        };
+
+        // Act & Assert
+        var exception = await Assert.ThrowsAsync<NotFoundException>(() => _tasksService.UnlockTaskAsync(taskId: 1000, unlockDto));
+        Assert.Equal(ErrorMessageConstants.LockedTaskWithIdDoesNotExist, exception.Message);
+    }
+
+    [Fact]
+    public async Task UnlockTaskAsync_TaskExists_TaskNotLocked_ThrowsNotFoundException()
+    {
+        // Arrange
+        var tasks = await _dataGenerator.InsertTasksAsync(count: 2, targetCategoryId, tasksStatus: Status.Pending);
+        var targetTaskId = tasks[0].Id;
+
+        var unlockDto = new UnlockTaskRequestDto()
+        {
+            Status = Status.Completed
+        };
+
+        // Act & Assert
+        var exception = await Assert.ThrowsAsync<NotFoundException>(() => _tasksService.UnlockTaskAsync(targetTaskId, unlockDto));
+        Assert.Equal(ErrorMessageConstants.LockedTaskWithIdDoesNotExist, exception.Message);
+    }
+
+    #endregion
+
     #region DeleteTask
 
     [Fact]
-    public async Task DeleteTaskAsync_TaskExists_TaskDeleted()
+    public async Task DeleteTaskAsync_TaskExists_PriorityEqualsLow_TaskDeleted()
     {
         // Arrange
-        var tasks = await _dataGenerator.InsertTasksAsync(count: 2, targetCategoryId);
+        var tasks = await _dataGenerator.InsertTasksAsync(count: 2, targetCategoryId, tasksPriority: Priority.Low);
         var targetTaskId = tasks[0].Id;
 
         // Act
@@ -385,6 +476,58 @@ public sealed class TasksServiceTests : IClassFixture<TestDatabaseFixture>, IAsy
 
         var deletedTask = await _dbContext.Tasks.FirstOrDefaultAsync(x => x.Id == targetTaskId);
         Assert.Null(deletedTask);
+
+        var message = string.Format(LoggingMessageConstants.TaskRemovedSuccessfully, targetTaskId);
+        _loggerMock.VerifyCallForLogInformationAndMessage(message);
+    }
+
+    [Fact]
+    public async Task DeleteTaskAsync_TaskExists_PriorityEqualsMedium_TaskDeleted_TaskInserted_Into_DeletedTasks()
+    {
+        // Arrange
+        var tasks = await _dataGenerator.InsertTasksAsync(count: 2, targetCategoryId, tasksPriority: Priority.Medium);
+        var targetTask = tasks[0];
+
+        // Act
+        await _tasksService.DeleteTaskAsync(targetTask.Id);
+
+        // Assert
+        var count = _dbContext.Tasks.Count();
+        Assert.Equal(tasks.Count - 1, count);
+
+        var deletedTask = await _dbContext.Tasks.FirstOrDefaultAsync(x => x.Id == targetTask.Id);
+        Assert.Null(deletedTask);
+
+        var expectedInsertedDeletedTask = TestResultBuilder.GetExpectedDeletedTask(targetTask);
+        var insertedDeletedTask = await _dbContext.DeletedTasks.FirstOrDefaultAsync(x => x.TaskId == targetTask.Id);
+        insertedDeletedTask!.Category = null; 
+        Assert.Equivalent(expectedInsertedDeletedTask, insertedDeletedTask, strict: true);
+
+        var message = string.Format(LoggingMessageConstants.TaskMovedSuccessfully, targetTask.Id);
+        _loggerMock.VerifyCallForLogInformationAndMessage(message);
+    }
+
+    [Fact]
+    public async Task DeleteTaskAsync_TaskExists_PriorityEqualsHigh_TaskNotDeleted_StatusChangedTo_Locked()
+    {
+        // Arrange
+        var tasks = await _dataGenerator.InsertTasksAsync(count: 2, targetCategoryId, tasksPriority: Priority.High);
+        var targetTask = tasks[0];
+
+        // Act
+        await _tasksService.DeleteTaskAsync(targetTask.Id);
+
+        // Assert
+        var count = _dbContext.Tasks.Count();
+        Assert.Equal(tasks.Count, count);
+
+        var deletedTask = await _dbContext.Tasks.FirstOrDefaultAsync(x => x.Id == targetTask.Id);
+        Assert.NotNull(deletedTask);
+
+        Assert.Equal(Status.Locked, deletedTask.Status);
+
+        var message = string.Format(LoggingMessageConstants.TaskLockedSuccessfully, targetTask.Id);
+        _loggerMock.VerifyCallForLogInformationAndMessage(message);
     }
 
     [Fact]
@@ -396,6 +539,30 @@ public sealed class TasksServiceTests : IClassFixture<TestDatabaseFixture>, IAsy
         // Act & Assert
         var exception = await Assert.ThrowsAsync<NotFoundException>(() => _tasksService.DeleteTaskAsync(taskId: 1000));
         Assert.Equal(ErrorMessageConstants.TaskDoesNotExist, exception.Message);
+    }
+
+    [Fact]
+    public async Task DeleteTaskAsync_TaskExists_AlreadyLocked_ThrowsConflictException()
+    {
+        // Arrange
+        var tasks = await _dataGenerator.InsertTasksAsync(count: 2, targetCategoryId, tasksStatus: Status.Locked);
+        var targetTaskId = tasks[0].Id;
+
+        // Act & Assert
+        var exception = await Assert.ThrowsAsync<ConflictException>(() => _tasksService.DeleteTaskAsync(targetTaskId));
+        Assert.Equal(ErrorMessageConstants.TaskAlreadyLocked, exception.Message);
+    }
+
+    [Fact]
+    public async Task DeleteTaskAsync_TaskExists_ArchivedTask_ThrowsConflictException()
+    {
+        // Arrange
+        var tasks = await _dataGenerator.InsertTasksAsync(count: 2, targetCategoryId, tasksStatus: Status.Archived);
+        var targetTaskId = tasks[0].Id;
+
+        // Act & Assert
+        var exception = await Assert.ThrowsAsync<ConflictException>(() => _tasksService.DeleteTaskAsync(targetTaskId));
+        Assert.Equal(ErrorMessageConstants.ArchivedTaskCanNotBeDeleted, exception.Message);
     }
 
     #endregion

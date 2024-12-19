@@ -44,8 +44,8 @@ public sealed class ReportsServiceTests : IClassFixture<TestDatabaseFixture>, IA
         var notMatchingTask1 = await _dataGenerator.InsertTasksAsync(count: 1, categories[0].Id, tasksPriority: Priority.Medium, tasksStatus: Status.InProgress);
         var notMatchingTask2 = await _dataGenerator.InsertTasksAsync(count: 1, categories[0].Id, tasksPriority: Priority.Low, tasksStatus: Status.Pending);
 
-        var targetTasks1 = await _dataGenerator.InsertTasksAsync(count: 4, categories[0].Id, tasksPriority: Priority.Low, tasksStatus: Status.InProgress);
-        var targetTasks2 = await _dataGenerator.InsertTasksAsync(count: 4, categories[1].Id, tasksPriority: Priority.Low, tasksStatus: Status.InProgress);
+        var targetTasks1 = await _dataGenerator.InsertTasksAsync(count: 4, categories[0].Id, tasksPriority: Priority.High, tasksStatus: Status.Locked);
+        var targetTasks2 = await _dataGenerator.InsertTasksAsync(count: 4, categories[1].Id, tasksPriority: Priority.High, tasksStatus: Status.Locked);
 
         var filtersDto = new ReportTasksRequestDto
         {
@@ -78,9 +78,9 @@ public sealed class ReportsServiceTests : IClassFixture<TestDatabaseFixture>, IA
     {
         // Arrange
         var targetTasks1 = await _dataGenerator.InsertTasksAsync(count: 1, categories[0].Id, tasksPriority: Priority.Medium, tasksStatus: Status.InProgress);
-
-        var targetTasks2 = await _dataGenerator.InsertTasksAsync(count: 4, categories[0].Id, tasksPriority: Priority.Low, tasksStatus: Status.InProgress);
-        var targetTasks3 = await _dataGenerator.InsertTasksAsync(count: 4, categories[1].Id, tasksPriority: Priority.Low, tasksStatus: Status.Completed);
+        var targetTasks2 = await _dataGenerator.InsertTasksAsync(count: 2, categories[0].Id, tasksPriority: Priority.Low, tasksStatus: Status.InProgress);
+        var targetTasks3 = await _dataGenerator.InsertTasksAsync(count: 2, categories[1].Id, tasksPriority: Priority.Low, tasksStatus: Status.Completed);
+        var targetTasks4 = await _dataGenerator.InsertTasksAsync(count: 1, categories[1].Id, tasksPriority: Priority.High, tasksStatus: Status.Locked);
 
         // Act
         var tasksReport = await _reportsService.GetReportForTasksAsync(new ReportTasksRequestDto());
@@ -89,6 +89,7 @@ public sealed class ReportsServiceTests : IClassFixture<TestDatabaseFixture>, IA
         var allTasks = targetTasks1
             .Concat(targetTasks2)
             .Concat(targetTasks3)
+            .Concat(targetTasks4)
             .ToList();
 
         var expectedTasksReport = TestResultBuilder.GetExpectedReport(categories, allTasks);

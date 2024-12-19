@@ -1,4 +1,6 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
+using Moq;
 using TaskManagementSystem.Constants;
 using TaskManagementSystem.Database;
 using TaskManagementSystem.Database.Models;
@@ -18,6 +20,7 @@ public sealed class CategoriesServiceTests : IClassFixture<TestDatabaseFixture>,
     private readonly TaskManagementSystemDbContext _dbContext;
     private readonly TestDataManager _dataGenerator;
     private readonly CategoryRepository _categoryRepository;
+    private readonly Mock<ILogger<CategoriesSerivce>> _loggerMock;
     private readonly CategoriesSerivce _categoriesService;
 
     private List<CategoryEntity> categories = new();
@@ -27,8 +30,9 @@ public sealed class CategoriesServiceTests : IClassFixture<TestDatabaseFixture>,
         _dbContext = fixture.DbContext;
         _dataGenerator = new TestDataManager(_dbContext);
         _categoryRepository = new CategoryRepository(_dbContext);
-
-        _categoriesService = new CategoriesSerivce(_dbContext, _categoryRepository);
+        _loggerMock = new Mock<ILogger<CategoriesSerivce>>();
+        
+        _categoriesService = new CategoriesSerivce(_dbContext, _categoryRepository, _loggerMock.Object);
     }
 
     public async Task InitializeAsync()
@@ -66,6 +70,9 @@ public sealed class CategoriesServiceTests : IClassFixture<TestDatabaseFixture>,
         Assert.NotNull(savedCategory);
         expectedCategory.Tasks = new List<TaskResponseDto>();
         Assert.Equivalent(expectedCategory, savedCategory);
+
+        var message = string.Format(LoggingMessageConstants.CategoryCreatedSuccessfully, resultCategory.Id);
+        _loggerMock.VerifyCallForLogInformationAndMessage(message);
     }
 
     #endregion
@@ -138,6 +145,9 @@ public sealed class CategoriesServiceTests : IClassFixture<TestDatabaseFixture>,
 
         expectedResultCategory.Tasks = new List<TaskResponseDto>();
         Assert.Equivalent(expectedResultCategory, updatedCategory);
+
+        var message = string.Format(LoggingMessageConstants.CategoryUpdatedSuccessfully, resultCategory.Id);
+        _loggerMock.VerifyCallForLogInformationAndMessage(message);
     }
 
     [Fact]
@@ -176,14 +186,29 @@ public sealed class CategoriesServiceTests : IClassFixture<TestDatabaseFixture>,
             .FirstOrDefaultAsync(x => x.Id == targetCategoryId);
 
         Assert.Null(deletedCategory);
+
+        var message = string.Format(LoggingMessageConstants.CategoryDeletedSuccessfully, targetCategoryId);
+        _loggerMock.VerifyCallForLogInformationAndMessage(message);
     }
 
     [Fact]
-    public async Task DeleteCategoryAsync_CategoryDoesNotExist_ReturnsFalse()
+    public async Task DeleteCategoryAsync_CategoryDoesNotExist_ThrowsNotFoundException()
     {
         // Act & Assert
         var exception = await Assert.ThrowsAsync<NotFoundException>(() => _categoriesService.DeleteCategoryAsync(categoryId: 1000));
         Assert.Equal(ErrorMessageConstants.CategoryDoesNotExist, exception.Message);
+    }
+
+    [Fact]
+    public async Task DeleteCategoryAsync_AssociatedTasksToCategory_ThrowsConflictException()
+    {
+        // Arrange
+        var targetCategoryId = categories[0].Id;
+        await _dataGenerator.InsertTasksAsync(count: 1, targetCategoryId);
+
+        // Act & Assert
+        var exception = await Assert.ThrowsAsync<ConflictException>(() => _categoriesService.DeleteCategoryAsync(targetCategoryId));
+        Assert.Equal(ErrorMessageConstants.AssociatedTasksToCategory, exception.Message);
     }
 
     #endregion
@@ -227,6 +252,7 @@ public sealed class CategoriesServiceTests : IClassFixture<TestDatabaseFixture>,
 
         var targetCompletedTasks = await _dataGenerator.InsertTasksAsync(count: 2, targetCategoryId, tasksStatus: Status.Completed);
         var targetInProgressTasks = await _dataGenerator.InsertTasksAsync(count: 1, targetCategoryId, tasksStatus: Status.InProgress);
+        var targetLockedTasks = await _dataGenerator.InsertTasksAsync(count: 1, targetCategoryId, tasksStatus: Status.Locked);
 
         await _dataGenerator.InsertTasksAsync(count: 2, categoryId: categories[1].Id);
 
@@ -243,6 +269,7 @@ public sealed class CategoriesServiceTests : IClassFixture<TestDatabaseFixture>,
             NumberOfInProgressTasks = targetInProgressTasks.Count,
             NumberOfCompletedTasks = targetCompletedTasks.Count,
             NumberOfArchivedTasks = 0,
+            NumberOfLockedTasks = targetLockedTasks.Count
         };
 
         Assert.Equivalent(expectedStatusStatistics, resultCompletionStatus.CompletionStatusStats, strict: true);

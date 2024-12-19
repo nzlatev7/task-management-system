@@ -15,11 +15,16 @@ public sealed class CategoriesSerivce : ICategoriesService
 {
     private readonly TaskManagementSystemDbContext _dbContext;
     private readonly ICategoryRepository _categoryRepository;
+    private readonly ILogger<CategoriesSerivce> _logger;
 
-    public CategoriesSerivce(TaskManagementSystemDbContext dbContext, ICategoryRepository categoryRepository)
+    public CategoriesSerivce(
+        TaskManagementSystemDbContext dbContext,
+        ICategoryRepository categoryRepository,
+        ILogger<CategoriesSerivce> logger)
     {
         _dbContext = dbContext;
         _categoryRepository = categoryRepository;
+        _logger = logger;
     }
 
     public async Task<CategoryResponseDto> CreateCategoryAsync(CategoryRequestDto categoryDto)
@@ -28,6 +33,8 @@ public sealed class CategoriesSerivce : ICategoriesService
 
         await _dbContext.Categories.AddAsync(category);
         await _dbContext.SaveChangesAsync();
+
+        _logger.LogInformation(LoggingMessageConstants.CategoryCreatedSuccessfully, category.Id);
 
         return category.ToOutDto();
     }
@@ -62,6 +69,8 @@ public sealed class CategoriesSerivce : ICategoriesService
 
         await _dbContext.SaveChangesAsync();
 
+        _logger.LogInformation(LoggingMessageConstants.CategoryUpdatedSuccessfully, categoryId);
+
         return category.ToOutDto();
     }
 
@@ -79,6 +88,8 @@ public sealed class CategoriesSerivce : ICategoriesService
 
         if (deletedRows is 0)
             throw new NotFoundException(ErrorMessageConstants.CategoryDoesNotExist);
+
+        _logger.LogInformation(LoggingMessageConstants.CategoryDeletedSuccessfully, categoryId);
     }
 
     public async Task<IEnumerable<TaskResponseDto>> GetTasksByCategoryAsync(int categoryId)
@@ -156,7 +167,8 @@ public sealed class CategoriesSerivce : ICategoriesService
             NumberOfPendingTasks = taskStatusToCountForCategory.GetValueOrDefault(Status.Pending, 0),
             NumberOfInProgressTasks = taskStatusToCountForCategory.GetValueOrDefault(Status.InProgress, 0),
             NumberOfCompletedTasks = taskStatusToCountForCategory.GetValueOrDefault(Status.Completed, 0),
-            NumberOfArchivedTasks = taskStatusToCountForCategory.GetValueOrDefault(Status.Archived, 0)
+            NumberOfArchivedTasks = taskStatusToCountForCategory.GetValueOrDefault(Status.Archived, 0),
+            NumberOfLockedTasks = taskStatusToCountForCategory.GetValueOrDefault(Status.Locked, 0)
         };
 
         return result;
