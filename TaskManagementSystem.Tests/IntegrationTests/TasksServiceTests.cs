@@ -135,32 +135,31 @@ public sealed class TasksServiceTests : IClassFixture<TestDatabaseFixture>, IAsy
 
     [Theory]
     [MemberData(nameof(SortingTaskPropertyTestData))]
-    public async Task GetAllTasksAsync_SortByPriorityAscendingProvided_ReturnsAllTasks_OrderedByPriorityProperly(SortingTaskProperty property, bool isAscending)
+    public async Task GetAllTasksAsync_SortBySortingTaskProperty_ReturnsAllTasks_OrderedBySortingTaskPropertyCorrectly(SortingTaskProperty property, bool isAscending)
     {
         // Arrange
         var baseDueDate = new DateTime(2024, 1, 1, 1, 1, 1, DateTimeKind.Utc);
-        var task1 = await _dataGenerator.InsertTaskAsync(title: "abv", baseDueDate.AddDays(1), priority: Priority.Low, status: Status.InProgress, targetCategoryId);
-        var task2 = await _dataGenerator.InsertTaskAsync(title: "bvg", baseDueDate.AddDays(2), priority: Priority.High, status: Status.Completed, categoryIds[1]);
+        var task1 = await _dataGenerator.InsertTaskAsync(title: "abv", baseDueDate.AddDays(2), priority: Priority.Low, status: Status.Completed, targetCategoryId);
+        var task2 = await _dataGenerator.InsertTaskAsync(title: "bvg", baseDueDate.AddDays(1), priority: Priority.High, status: Status.InProgress, categoryIds[1]);
 
-        var tasks = new List<TaskEntity>
-        {
-            task1,
-            task2
-        };
-
-        var dto = new GetAllTasksRequestDto()
+        var sortByDto = new GetAllTasksRequestDto()
         {
             Property = property,
             IsAscending = isAscending,
         };
 
         // Act
-        var result = await _tasksService.GetAllTasksAsync(dto);
+        var result = await _tasksService.GetAllTasksAsync(sortByDto);
 
         // Assert
-        var expectedTasks = TestResultBuilder.GetExpectedTasks(tasks);
+        var tasks = new List<TaskEntity>
+        {
+            task1,
+            task2
+        };
 
-        var orderedExpectedTasks = TestResultBuilder.GetOrderedTasks(expectedTasks, isAscending);
+        var expectedTasks = TestResultBuilder.GetExpectedTasks(tasks);
+        var orderedExpectedTasks = TestResultBuilder.GetOrderedTasks(expectedTasks, sortByDto);
         Assert.Equivalent(orderedExpectedTasks, result, strict: true);
 
         var expectedIds = orderedExpectedTasks.Select(x => x.Id).ToList();

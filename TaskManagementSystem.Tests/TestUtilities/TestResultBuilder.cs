@@ -30,14 +30,43 @@ public static class TestResultBuilder
         return result;
     }
 
-    public static List<TaskResponseDto> GetOrderedTasks(List<TaskResponseDto> tasks, bool sortByPriorityAscending)
+    public static List<TaskResponseDto> GetOrderedTasks(List<TaskResponseDto> tasks, GetAllTasksRequestDto sortBy)
     {
-        if (sortByPriorityAscending)
-            tasks = tasks.OrderBy(x => x.Priority).ToList();
-        else
-            tasks = tasks.OrderByDescending(x => x.Priority).ToList();
+        switch (sortBy.Property)
+        {
+            case SortingTaskProperty.Id:
+                tasks = tasks.OrderBy(x => x.Id, sortBy.IsAscending);
+                break;
+            case SortingTaskProperty.Title:
+                tasks = tasks.OrderBy(x => x.Title, sortBy.IsAscending);
+                break;
+            case SortingTaskProperty.DueDate:
+                tasks = tasks.OrderBy(x => x.DueDate, sortBy.IsAscending);
+                break;
+            case SortingTaskProperty.Priority:
+                tasks = tasks.OrderBy(x => x.Priority, sortBy.IsAscending);
+                break;
+            case SortingTaskProperty.Status:
+                tasks = tasks.OrderBy(x => x.Status, sortBy.IsAscending);
+                break;
+            case SortingTaskProperty.CategoryId:
+                tasks = tasks.OrderBy(x => x.CategoryId, sortBy.IsAscending);
+                break;
+            default:
+                break;
+        }
 
         return tasks;
+    }
+
+    private static List<TaskResponseDto> OrderBy<T>(
+        this List<TaskResponseDto> tasks,
+        Func<TaskResponseDto, T> expression,
+        bool isAscending)
+    {
+        return isAscending 
+            ? tasks.OrderBy(expression).ToList() 
+            : tasks.OrderByDescending(expression).ToList();
     }
 
     public static CategoryResponseDto GetExpectedCategory(int categoryId, CategoryRequestDto category)

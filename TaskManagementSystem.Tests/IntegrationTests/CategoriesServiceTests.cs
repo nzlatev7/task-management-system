@@ -308,6 +308,7 @@ public sealed class CategoriesServiceTests : IClassFixture<TestDatabaseFixture>,
             NumberOfInProgressTasks = 0,
             NumberOfCompletedTasks = 0,
             NumberOfArchivedTasks = 0,
+            NumberOfLockedTasks = 0,
         };
 
         Assert.Equivalent(expectedStatusStatistics, resultCompletionStatus.CompletionStatusStats, strict: true);
