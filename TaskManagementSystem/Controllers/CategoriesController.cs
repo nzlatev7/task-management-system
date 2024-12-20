@@ -52,7 +52,6 @@ public class CategoriesController : ControllerBase
         return Ok(result);
     }
 
-
     [HttpDelete]
     [Route(RouteConstants.CategoryById)]
     public async Task<ActionResult> DeleteCategory([FromRoute] int id)
@@ -75,7 +74,7 @@ public class CategoriesController : ControllerBase
     [Route(RouteConstants.CompletionStatus)]
     public async Task<ActionResult<CategoryCompletionStatusResponseDto>> GetCompletionStatusForCategory([FromRoute] int id)
     {
-        var result = await _categoriesService.GetCompletionStatusForCategoryAwait(id);
+        var result = await _categoriesService.GetCompletionStatusForCategoryAsync(id);
 
         return Ok(result);
     }

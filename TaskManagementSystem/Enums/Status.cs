@@ -5,5 +5,6 @@ public enum Status
     Pending,
     InProgress,
     Completed,
-    Archived
+    Archived,
+    Locked
 }

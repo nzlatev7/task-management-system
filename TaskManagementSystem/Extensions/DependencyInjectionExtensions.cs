@@ -3,6 +3,8 @@ using TaskManagementSystem.Database;
 using TaskManagementSystem.ExceptionHandlers;
 using TaskManagementSystem.Exceptions;
 using TaskManagementSystem.Interfaces;
+using TaskManagementSystem.Logging;
+using TaskManagementSystem.Repositories;
 using TaskManagementSystem.Services;
 
 namespace TaskManagementSystem.Extensions;
@@ -16,6 +18,15 @@ public static class DependencyInjectionExtensions
                 opt.UseLazyLoadingProxies()
                     .UseNpgsql(dbConnectionString));
 
+        services.AddSingleton(typeof(ILogger<>), typeof(LoggingDecorator<>));
+
+        return services;
+    }
+
+    public static IServiceCollection AddRepositories(this IServiceCollection services)
+    {
+        services.AddScoped<ICategoryRepository, CategoryRepository>();
+
         return services;
     }
 
@@ -26,7 +37,7 @@ public static class DependencyInjectionExtensions
         services.AddScoped<IReportsService, ReportsService>();
 
         return services;
-    }   
+    }
 
     public static IServiceCollection AddErrorHandling(this IServiceCollection services)
     {
