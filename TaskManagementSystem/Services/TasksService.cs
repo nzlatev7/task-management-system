@@ -9,6 +9,7 @@ using TaskManagementSystem.Helpers;
 using TaskManagementSystem.Interfaces;
 using TaskManagementSystem.Enums;
 using TaskManagementSystem.Extensions;
+using TaskManagementSystem.Handlers;
 
 namespace TaskManagementSystem.Services;
 
@@ -23,7 +24,7 @@ public sealed class TasksService : ITasksService
         ICategoryRepository categoryRepository,
         ILogger<TasksService> logger)
     {
-        _dbContext = dbContext;
+        _dbContext = dbContext; 
         _categoryRepository = categoryRepository;
         _logger = logger;
     }
@@ -109,27 +110,10 @@ public sealed class TasksService : ITasksService
         if (taskEntity.Status == Status.Archived)
             throw new ConflictException(ErrorMessageConstants.ArchivedTaskCanNotBeDeleted);
 
-        switch (taskEntity.Priority)
-        {
-            case Priority.Low:
-                _dbContext.Tasks.Remove(taskEntity);
-                _logger.LogInformation(LoggingMessageConstants.TaskRemovedSuccessfully, taskId);
-                break;
-            case Priority.Medium:
-                _dbContext.Tasks.Remove(taskEntity);
-                var deletedTaskEntity = taskEntity.ToDeletedTaskEntity();
-                await _dbContext.DeletedTasks.AddAsync(deletedTaskEntity);
-                _logger.LogInformation(LoggingMessageConstants.TaskMovedSuccessfully, taskId);
-                break;
-            case Priority.High:
-                taskEntity.Status = Status.Locked;
-                _logger.LogInformation(LoggingMessageConstants.TaskLockedSuccessfully, taskId);
-                break;
-            default:
-                break;
-        }
+        var priorityHandlerFactory = new TaskPriorityHandlerFactory();
+        var priorityHandler = priorityHandlerFactory.GetHandler(taskEntity.Priority);
 
-        await _dbContext.SaveChangesAsync();
+        await priorityHandler.HandleAsync(taskEntity, _dbContext, _logger);
     }
 
     private async Task ValidatateCategoryExistsAsync(int categoryId)
