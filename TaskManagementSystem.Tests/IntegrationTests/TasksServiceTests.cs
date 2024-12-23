@@ -1,6 +1,5 @@
 ﻿using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Logging;
 using Moq;
 using TaskManagementSystem.Constants;
 using TaskManagementSystem.Database;
@@ -8,6 +7,7 @@ using TaskManagementSystem.Database.Models;
 using TaskManagementSystem.DTOs.Request;
 using TaskManagementSystem.Enums;
 using TaskManagementSystem.Exceptions;
+using TaskManagementSystem.TaskDeleteStategy;
 using TaskManagementSystem.Interfaces;
 using TaskManagementSystem.Services;
 using TaskManagementSystem.Tests.Fixtures;
@@ -18,9 +18,10 @@ namespace TaskManagementSystem.Tests.IntegrationTests;
 public sealed class TasksServiceTests : IClassFixture<TestDatabaseFixture>, IAsyncLifetime
 {
     private readonly TaskManagementSystemDbContext _dbContext;
-    private readonly Mock<ICategoryRepository> _categoryRepositoryMock;
     private readonly TestDataManager _dataGenerator;
-    private readonly Mock<ILogger<TasksService>> _loggerMock;
+    private readonly ITaskDeleteContext _deleteHandlerFactory;
+
+    private readonly Mock<ICategoryRepository> _categoryRepositoryMock;
 
     private readonly TasksService _tasksService;
 
@@ -30,12 +31,12 @@ public sealed class TasksServiceTests : IClassFixture<TestDatabaseFixture>, IAsy
     public TasksServiceTests(TestDatabaseFixture fixture)
     {
         _dbContext = fixture.DbContext;
-
         _dataGenerator = new TestDataManager(_dbContext);
-        _categoryRepositoryMock = new Mock<ICategoryRepository>();
-        _loggerMock = new Mock<ILogger<TasksService>>();
+        _deleteHandlerFactory = new TaskDeleteContext(_dbContext);
 
-        _tasksService = new TasksService(_dbContext, _categoryRepositoryMock.Object, _loggerMock.Object);
+        _categoryRepositoryMock = new Mock<ICategoryRepository>();
+
+        _tasksService = new TasksService(_dbContext, _categoryRepositoryMock.Object, _deleteHandlerFactory);
     }
 
     public async Task InitializeAsync()
@@ -85,9 +86,6 @@ public sealed class TasksServiceTests : IClassFixture<TestDatabaseFixture>, IAsy
         Assert.Equivalent(expectedTask, savedTask);
 
         _categoryRepositoryMock.VerifyCallForCategoryExists();
-
-        var message = string.Format(LoggingMessageConstants.TaskCreatedSuccessfully, resultTask.Id, resultTask.CategoryId);
-        _loggerMock.VerifyCallForLogInformationAndMessage(message);
     }
 
     [Fact]
@@ -246,9 +244,6 @@ public sealed class TasksServiceTests : IClassFixture<TestDatabaseFixture>, IAsy
         Assert.Equivalent(expectedTask, updatedTask);
 
         _categoryRepositoryMock.VerifyCallForCategoryExists();
-
-        var message = string.Format(LoggingMessageConstants.TaskUpdatedSuccessfully, resultTask.Id);
-        _loggerMock.VerifyCallForLogInformationAndMessage(message);
     }
 
     [Fact]
@@ -417,9 +412,6 @@ public sealed class TasksServiceTests : IClassFixture<TestDatabaseFixture>, IAsy
             .FirstOrDefaultAsync();
 
         Assert.Equal(expectedStatus, updatedStatus);
-
-        var message = string.Format(LoggingMessageConstants.TaskUnlockedSuccessfully, targetTaskId);
-        _loggerMock.VerifyCallForLogInformationAndMessage(message);
     }
 
     [Fact]
@@ -460,37 +452,38 @@ public sealed class TasksServiceTests : IClassFixture<TestDatabaseFixture>, IAsy
     #region DeleteTask
 
     [Fact]
-    public async Task DeleteTaskAsync_TaskExists_PriorityEqualsLow_TaskDeleted()
+    public async Task DeleteTaskAsync_TaskExists_PriorityEqualsLow_TaskDeleted_ReturnsRemovedDeleteAction()
     {
         // Arrange
         var tasks = await _dataGenerator.InsertTasksAsync(count: 2, targetCategoryId, tasksPriority: Priority.Low);
         var targetTaskId = tasks[0].Id;
 
         // Act
-        await _tasksService.DeleteTaskAsync(targetTaskId);
+        var result = await _tasksService.DeleteTaskAsync(targetTaskId);
 
         // Assert
+        Assert.Equal(DeleteAction.Removed, result);
+
         var count = _dbContext.Tasks.Count();
         Assert.Equal(tasks.Count - 1, count);
 
         var deletedTask = await _dbContext.Tasks.FirstOrDefaultAsync(x => x.Id == targetTaskId);
         Assert.Null(deletedTask);
-
-        var message = string.Format(LoggingMessageConstants.TaskRemovedSuccessfully, targetTaskId);
-        _loggerMock.VerifyCallForLogInformationAndMessage(message);
     }
 
     [Fact]
-    public async Task DeleteTaskAsync_TaskExists_PriorityEqualsMedium_TaskDeleted_TaskInserted_Into_DeletedTasks()
+    public async Task DeleteTaskAsync_TaskExists_PriorityEqualsMedium_TaskDeleted_TaskInserted_Into_DeletedTasks_ReturnsMovedDeleteAction()
     {
         // Arrange
         var tasks = await _dataGenerator.InsertTasksAsync(count: 2, targetCategoryId, tasksPriority: Priority.Medium);
         var targetTask = tasks[0];
 
         // Act
-        await _tasksService.DeleteTaskAsync(targetTask.Id);
+        var result = await _tasksService.DeleteTaskAsync(targetTask.Id);
 
         // Assert
+        Assert.Equal(DeleteAction.Moved, result);
+
         var count = _dbContext.Tasks.Count();
         Assert.Equal(tasks.Count - 1, count);
 
@@ -498,35 +491,33 @@ public sealed class TasksServiceTests : IClassFixture<TestDatabaseFixture>, IAsy
         Assert.Null(deletedTask);
 
         var expectedInsertedDeletedTask = TestResultBuilder.GetExpectedDeletedTask(targetTask);
-        var insertedDeletedTask = await _dbContext.DeletedTasks.FirstOrDefaultAsync(x => x.TaskId == targetTask.Id);
-        insertedDeletedTask!.Category = null; 
-        Assert.Equivalent(expectedInsertedDeletedTask, insertedDeletedTask, strict: true);
+        var insertedDeletedTask = await _dbContext.DeletedTasks
+            .FirstOrDefaultAsync(x => x.TaskId == targetTask.Id);
 
-        var message = string.Format(LoggingMessageConstants.TaskMovedSuccessfully, targetTask.Id);
-        _loggerMock.VerifyCallForLogInformationAndMessage(message);
+        insertedDeletedTask!.Category = null;
+        Assert.Equivalent(expectedInsertedDeletedTask, insertedDeletedTask, strict: true);
     }
 
     [Fact]
-    public async Task DeleteTaskAsync_TaskExists_PriorityEqualsHigh_TaskNotDeleted_StatusChangedTo_Locked()
+    public async Task DeleteTaskAsync_TaskExists_PriorityEqualsHigh_TaskNotDeleted_StatusChangedTo_Locked_ReturnsLockedDeleteAction()
     {
         // Arrange
         var tasks = await _dataGenerator.InsertTasksAsync(count: 2, targetCategoryId, tasksPriority: Priority.High);
-        var targetTask = tasks[0];
+        var targetTaskId = tasks[0].Id;
 
         // Act
-        await _tasksService.DeleteTaskAsync(targetTask.Id);
+        var result = await _tasksService.DeleteTaskAsync(targetTaskId);
 
         // Assert
+        Assert.Equal(DeleteAction.Locked, result);
+
         var count = _dbContext.Tasks.Count();
         Assert.Equal(tasks.Count, count);
 
-        var deletedTask = await _dbContext.Tasks.FirstOrDefaultAsync(x => x.Id == targetTask.Id);
+        var deletedTask = await _dbContext.Tasks.FirstOrDefaultAsync(x => x.Id == targetTaskId);
         Assert.NotNull(deletedTask);
 
         Assert.Equal(Status.Locked, deletedTask.Status);
-
-        var message = string.Format(LoggingMessageConstants.TaskLockedSuccessfully, targetTask.Id);
-        _loggerMock.VerifyCallForLogInformationAndMessage(message);
     }
 
     [Fact]

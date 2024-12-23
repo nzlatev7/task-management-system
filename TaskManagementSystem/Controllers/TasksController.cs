@@ -65,8 +65,8 @@ public class TasksController : ControllerBase
     [Route(RouteConstants.TaskById)]
     public async Task<ActionResult> DeleteTask([FromRoute] int id)
     {
-        await _tasksService.DeleteTaskAsync(id);
+        var deleteAction = await _tasksService.DeleteTaskAsync(id);
 
-        return Ok();
+        return Ok(deleteAction);
     }
 }

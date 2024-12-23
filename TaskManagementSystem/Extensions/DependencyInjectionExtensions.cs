@@ -2,8 +2,9 @@
 using TaskManagementSystem.Database;
 using TaskManagementSystem.ExceptionHandlers;
 using TaskManagementSystem.Exceptions;
+using TaskManagementSystem.TaskDeleteStategy;
 using TaskManagementSystem.Interfaces;
-using TaskManagementSystem.Logging;
+using TaskManagementSystem.LoggingDecorators;
 using TaskManagementSystem.Repositories;
 using TaskManagementSystem.Services;
 
@@ -18,8 +19,6 @@ public static class DependencyInjectionExtensions
                 opt.UseLazyLoadingProxies()
                     .UseNpgsql(dbConnectionString));
 
-        services.AddSingleton(typeof(ILogger<>), typeof(LoggingDecorator<>));
-
         return services;
     }
 
@@ -33,8 +32,13 @@ public static class DependencyInjectionExtensions
     public static IServiceCollection AddApplication(this IServiceCollection services)
     {
         services.AddScoped<ITasksService, TasksService>();
+        services.Decorate<ITasksService, TasksServiceLoggingDecorator>();
+
         services.AddScoped<ICategoriesService, CategoriesSerivce>();
+        services.Decorate<ICategoriesService, CategoriesServiceLoggingDecorator>();
+
         services.AddScoped<IReportsService, ReportsService>();
+        services.AddScoped<ITaskDeleteContext, TaskDeleteContext>();
 
         return services;
     }

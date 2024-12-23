@@ -9,7 +9,6 @@ using TaskManagementSystem.Helpers;
 using TaskManagementSystem.Interfaces;
 using TaskManagementSystem.Enums;
 using TaskManagementSystem.Extensions;
-using TaskManagementSystem.Handlers;
 
 namespace TaskManagementSystem.Services;
 
@@ -17,16 +16,16 @@ public sealed class TasksService : ITasksService
 {
     private readonly TaskManagementSystemDbContext _dbContext;
     private readonly ICategoryRepository _categoryRepository;
-    private readonly ILogger<TasksService> _logger;
+    private readonly ITaskDeleteContext _taskDeleteContext;
 
     public TasksService(
         TaskManagementSystemDbContext dbContext,
         ICategoryRepository categoryRepository,
-        ILogger<TasksService> logger)
+        ITaskDeleteContext deleteHandlerFactory)
     {
         _dbContext = dbContext; 
         _categoryRepository = categoryRepository;
-        _logger = logger;
+        _taskDeleteContext = deleteHandlerFactory;
     }
 
     public async Task<TaskResponseDto> CreateTaskAsync(CreateTaskRequestDto taskDto)
@@ -37,8 +36,6 @@ public sealed class TasksService : ITasksService
 
         await _dbContext.Tasks.AddAsync(taskEntity);
         await _dbContext.SaveChangesAsync();
-
-        _logger.LogInformation(LoggingMessageConstants.TaskCreatedSuccessfully, taskEntity.Id, taskEntity.CategoryId);
 
         return taskEntity.ToOutDto();
     }
@@ -82,8 +79,6 @@ public sealed class TasksService : ITasksService
 
         await _dbContext.SaveChangesAsync();
 
-        _logger.LogInformation(LoggingMessageConstants.TaskUpdatedSuccessfully, taskEntity.Id);
-
         return taskEntity.ToOutDto();
     }
 
@@ -95,11 +90,9 @@ public sealed class TasksService : ITasksService
 
         if (updatedRows is 0)
             throw new NotFoundException(ErrorMessageConstants.LockedTaskWithIdDoesNotExist);
-
-        _logger.LogInformation(LoggingMessageConstants.TaskUnlockedSuccessfully, taskId);
     }
 
-    public async Task DeleteTaskAsync(int taskId)
+    public async Task<DeleteAction> DeleteTaskAsync(int taskId)
     {
         var taskEntity = await _dbContext.Tasks.FindAsync(taskId)
             ?? throw new NotFoundException(ErrorMessageConstants.TaskDoesNotExist);
@@ -110,10 +103,11 @@ public sealed class TasksService : ITasksService
         if (taskEntity.Status == Status.Archived)
             throw new ConflictException(ErrorMessageConstants.ArchivedTaskCanNotBeDeleted);
 
-        var priorityHandlerFactory = new TaskPriorityHandlerFactory();
-        var priorityHandler = priorityHandlerFactory.GetHandler(taskEntity.Priority);
+        var deleteAction = GetDeleteAction(taskEntity.Priority);
 
-        await priorityHandler.HandleAsync(taskEntity, _dbContext, _logger);
+        await _taskDeleteContext.HandleAsync(taskEntity, deleteAction);
+
+        return deleteAction;
     }
 
     private async Task ValidatateCategoryExistsAsync(int categoryId)
@@ -138,4 +132,12 @@ public sealed class TasksService : ITasksService
         if (canLockedBeEdited)
             throw new ConflictException(ErrorMessageConstants.LockedTaskCanNotBeEdited);
     }
+
+    private DeleteAction GetDeleteAction(Priority priority) => priority switch
+    {
+        Priority.Low => DeleteAction.Removed,
+        Priority.Medium => DeleteAction.Moved,
+        Priority.High => DeleteAction.Locked,
+        _ => DeleteAction.Removed
+    };
 }

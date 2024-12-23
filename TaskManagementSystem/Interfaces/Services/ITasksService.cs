@@ -1,5 +1,6 @@
 ﻿using TaskManagementSystem.DTOs.Request;
 using TaskManagementSystem.DTOs.Response;
+using TaskManagementSystem.Enums;
 
 namespace TaskManagementSystem.Interfaces;
 
@@ -15,5 +16,5 @@ public interface ITasksService
 
     Task UnlockTaskAsync(int taskId, UnlockTaskRequestDto unlockDto);
 
-    Task DeleteTaskAsync(int taskId);
+    Task<DeleteAction> DeleteTaskAsync(int taskId);
 }

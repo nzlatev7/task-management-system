@@ -1,6 +1,4 @@
 ﻿using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Logging;
-using Moq;
 using TaskManagementSystem.Constants;
 using TaskManagementSystem.Database;
 using TaskManagementSystem.Database.Models;
@@ -20,7 +18,6 @@ public sealed class CategoriesServiceTests : IClassFixture<TestDatabaseFixture>,
     private readonly TaskManagementSystemDbContext _dbContext;
     private readonly TestDataManager _dataGenerator;
     private readonly CategoryRepository _categoryRepository;
-    private readonly Mock<ILogger<CategoriesSerivce>> _loggerMock;
     private readonly CategoriesSerivce _categoriesService;
 
     private List<CategoryEntity> categories = new();
@@ -30,9 +27,8 @@ public sealed class CategoriesServiceTests : IClassFixture<TestDatabaseFixture>,
         _dbContext = fixture.DbContext;
         _dataGenerator = new TestDataManager(_dbContext);
         _categoryRepository = new CategoryRepository(_dbContext);
-        _loggerMock = new Mock<ILogger<CategoriesSerivce>>();
         
-        _categoriesService = new CategoriesSerivce(_dbContext, _categoryRepository, _loggerMock.Object);
+        _categoriesService = new CategoriesSerivce(_dbContext, _categoryRepository);
     }
 
     public async Task InitializeAsync()
@@ -70,9 +66,6 @@ public sealed class CategoriesServiceTests : IClassFixture<TestDatabaseFixture>,
         Assert.NotNull(savedCategory);
         expectedCategory.Tasks = new List<TaskResponseDto>();
         Assert.Equivalent(expectedCategory, savedCategory);
-
-        var message = string.Format(LoggingMessageConstants.CategoryCreatedSuccessfully, resultCategory.Id);
-        _loggerMock.VerifyCallForLogInformationAndMessage(message);
     }
 
     #endregion
@@ -145,9 +138,6 @@ public sealed class CategoriesServiceTests : IClassFixture<TestDatabaseFixture>,
 
         expectedResultCategory.Tasks = new List<TaskResponseDto>();
         Assert.Equivalent(expectedResultCategory, updatedCategory);
-
-        var message = string.Format(LoggingMessageConstants.CategoryUpdatedSuccessfully, resultCategory.Id);
-        _loggerMock.VerifyCallForLogInformationAndMessage(message);
     }
 
     [Fact]
@@ -186,9 +176,6 @@ public sealed class CategoriesServiceTests : IClassFixture<TestDatabaseFixture>,
             .FirstOrDefaultAsync(x => x.Id == targetCategoryId);
 
         Assert.Null(deletedCategory);
-
-        var message = string.Format(LoggingMessageConstants.CategoryDeletedSuccessfully, targetCategoryId);
-        _loggerMock.VerifyCallForLogInformationAndMessage(message);
     }
 
     [Fact]
