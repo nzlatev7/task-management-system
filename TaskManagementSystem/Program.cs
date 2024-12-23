@@ -9,6 +9,7 @@ builder.Services.AddControllers();
 builder.Services
     .AddOpenApi()
     .AddInfrastructure(builder.Configuration)
+    .AddRepositories()
     .AddApplication()
     .AddErrorHandling();
 

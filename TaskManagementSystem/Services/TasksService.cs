@@ -15,30 +15,24 @@ namespace TaskManagementSystem.Services;
 public sealed class TasksService : ITasksService
 {
     private readonly TaskManagementSystemDbContext _dbContext;
-    private readonly ICategoriesService _categoriesService;
+    private readonly ICategoryRepository _categoryRepository;
+    private readonly ITaskDeleteContext _taskDeleteContext;
 
-    public TasksService(TaskManagementSystemDbContext dbContext, ICategoriesService categoriesService)
+    public TasksService(
+        TaskManagementSystemDbContext dbContext,
+        ICategoryRepository categoryRepository,
+        ITaskDeleteContext deleteHandlerFactory)
     {
-        _dbContext = dbContext;
-        _categoriesService = categoriesService;
+        _dbContext = dbContext; 
+        _categoryRepository = categoryRepository;
+        _taskDeleteContext = deleteHandlerFactory;
     }
 
     public async Task<TaskResponseDto> CreateTaskAsync(CreateTaskRequestDto taskDto)
     {
-        await ValidatateCategoryExists(taskDto.CategoryId);
+        await ValidatateCategoryExistsAsync(taskDto.CategoryId);
 
-        var taskEntity = new TaskEntity()
-        {
-            Title = taskDto.Title,
-            Description = taskDto.Description,
-            DueDate = taskDto.DueDate,
-            IsCompleted = false,
-            Status = Status.Pending,
-            CategoryId = taskDto.CategoryId
-        };
-
-        if (taskDto.Priority.HasValue)
-            taskEntity.Priority = taskDto.Priority.Value;
+        var taskEntity = taskDto.ToTaskEntityForCreate();
 
         await _dbContext.Tasks.AddAsync(taskEntity);
         await _dbContext.SaveChangesAsync();
@@ -46,86 +40,104 @@ public sealed class TasksService : ITasksService
         return taskEntity.ToOutDto();
     }
 
-    public async Task<IEnumerable<TaskResponseDto>> GetAllTasksAsync(bool sortByPriorityAscending)
+    public async Task<IEnumerable<TaskResponseDto>> GetAllTasksAsync(GetAllTasksRequestDto sortByInstructions)
     {
         var tasks = await _dbContext.Tasks
-            .SortByPriority(sortByPriorityAscending)
-            .ToOutDtos();
+            .SortBy(sortByInstructions)
+            .Select(x => new TaskResponseDto
+            {
+                Id = x.Id,
+                Title = x.Title,
+                Description = x.Description,
+                DueDate = x.DueDate,
+                Priority = x.Priority,
+                IsCompleted = x.IsCompleted,
+                Status = x.Status,
+                CategoryId = x.CategoryId
+            }).ToListAsync();
 
         return tasks;
     }
 
     public async Task<TaskResponseDto> GetTaskByIdAsync(int taskId)
     {
-        var taskEntity = await GetTaskEntityAsync(taskId);
+        var taskEntity = await _dbContext.Tasks.FindAsync(taskId)
+            ?? throw new NotFoundException(ErrorMessageConstants.TaskDoesNotExist);
 
         return taskEntity.ToOutDto();
     }
 
     public async Task<TaskResponseDto> UpdateTaskAsync(int taskId, UpdateTaskRequestDto taskDto)
     {
-        var taskEntity = await GetTaskEntityAsync(taskId);
+        var taskEntity = await _dbContext.Tasks.FindAsync(taskId)
+            ?? throw new NotFoundException(ErrorMessageConstants.TaskDoesNotExist);
 
-        await ValidateTaskDataForUpdate(taskEntity, taskDto);
+        ValidateTaskStatusForUpdateAsync(taskEntity, taskDto);
+        await ValidatateCategoryExistsAsync(taskDto.CategoryId);
 
-        taskEntity.Title = taskDto.Title;
-        taskEntity.Description = taskDto.Description;
-        taskEntity.DueDate = taskDto.DueDate;
-        taskEntity.IsCompleted = IsCompleted(taskDto.Status);
-        taskEntity.Status = taskDto.Status;
-        taskEntity.CategoryId = taskDto.CategoryId;
-
-        if (taskDto.Priority.HasValue)
-            taskEntity.Priority = taskDto.Priority.Value;
+        taskDto.UpdateTaskEntity(taskEntity);
 
         await _dbContext.SaveChangesAsync();
 
         return taskEntity.ToOutDto();
     }
 
-    public async Task DeleteTaskAsync(int taskId)
+    public async Task UnlockTaskAsync(int taskId, UnlockTaskRequestDto unlockDto)
     {
-        var deletedRows = await _dbContext.Tasks
-            .Where(x => x.Id == taskId)
-            .ExecuteDeleteAsync();
+        var updatedRows = await _dbContext.Tasks
+            .Where(x => x.Id == taskId && x.Status == Status.Locked)
+            .ExecuteUpdateAsync(x => x.SetProperty(x => x.Status, unlockDto.Status));
 
-        if (deletedRows is 0)
-            throw new NotFoundException(ErrorMessageConstants.TaskDoesNotExist);
+        if (updatedRows is 0)
+            throw new NotFoundException(ErrorMessageConstants.LockedTaskWithIdDoesNotExist);
     }
 
-    private async Task<TaskEntity> GetTaskEntityAsync(int taskId)
+    public async Task<DeleteAction> DeleteTaskAsync(int taskId)
     {
-        var taskEntity = await _dbContext.Tasks.FindAsync(taskId) 
+        var taskEntity = await _dbContext.Tasks.FindAsync(taskId)
             ?? throw new NotFoundException(ErrorMessageConstants.TaskDoesNotExist);
 
-        return taskEntity;
+        if (taskEntity.Status == Status.Locked)
+            throw new ConflictException(ErrorMessageConstants.TaskAlreadyLocked);
+
+        if (taskEntity.Status == Status.Archived)
+            throw new ConflictException(ErrorMessageConstants.ArchivedTaskCanNotBeDeleted);
+
+        var deleteAction = GetDeleteAction(taskEntity.Priority);
+
+        await _taskDeleteContext.HandleAsync(taskEntity, deleteAction);
+
+        return deleteAction;
     }
 
-    private async Task ValidatateCategoryExists(int categoryId)
+    private async Task ValidatateCategoryExistsAsync(int categoryId)
     {
-        var categoryExists = await _categoriesService.CategoryExistsAsync(categoryId);
+        var categoryExists = await _categoryRepository.CategoryExistsAsync(categoryId);
 
         if (!categoryExists)
             throw new BadHttpRequestException(ErrorMessageConstants.CategoryDoesNotExist);
     }
 
-    private bool IsCompleted(Status taskStatus)
-    {
-        return taskStatus == Status.Completed || taskStatus == Status.Archived
-            ? true
-            : false;
-    }
-
-    private async Task ValidateTaskDataForUpdate(TaskEntity taskEntity, UpdateTaskRequestDto taskDto)
+    private void ValidateTaskStatusForUpdateAsync(TaskEntity taskEntity, UpdateTaskRequestDto taskDto)
     {
         var canArchivedBeEdited = taskEntity.Status == Status.Archived;
         if (canArchivedBeEdited)
-            throw new BadHttpRequestException(ErrorMessageConstants.ArchivedTaskCanNotBeEdited);
+            throw new ConflictException(ErrorMessageConstants.ArchivedTaskCanNotBeEdited);
 
         var canArchiveEntity = taskEntity.Status != Status.Completed && taskDto.Status == Status.Archived;
         if (canArchiveEntity)
-            throw new BadHttpRequestException(ErrorMessageConstants.OnlyCompletedTaskCanBeArchived);
+            throw new ConflictException(ErrorMessageConstants.OnlyCompletedTaskCanBeArchived);
 
-        await ValidatateCategoryExists(taskDto.CategoryId);
+        var canLockedBeEdited = taskEntity.Status == Status.Locked;
+        if (canLockedBeEdited)
+            throw new ConflictException(ErrorMessageConstants.LockedTaskCanNotBeEdited);
     }
+
+    private DeleteAction GetDeleteAction(Priority priority) => priority switch
+    {
+        Priority.Low => DeleteAction.Removed,
+        Priority.Medium => DeleteAction.Moved,
+        Priority.High => DeleteAction.Locked,
+        _ => DeleteAction.Removed
+    };
 }

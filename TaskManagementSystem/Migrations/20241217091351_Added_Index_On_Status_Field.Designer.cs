@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using TaskManagementSystem.Database;
@@ -11,9 +12,11 @@ using TaskManagementSystem.Database;
 namespace TaskManagementSystem.Migrations
 {
     [DbContext(typeof(TaskManagementSystemDbContext))]
-    partial class TaskManagementSystemDbContextModelSnapshot : ModelSnapshot
+    [Migration("20241217091351_Added_Index_On_Status_Field")]
+    partial class Added_Index_On_Status_Field
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -52,48 +55,6 @@ namespace TaskManagementSystem.Migrations
                     b.HasKey("Id");
 
                     b.ToTable("category");
-                });
-
-            modelBuilder.Entity("TaskManagementSystem.Database.Models.DeletedTaskEntity", b =>
-                {
-                    b.Property<int>("TaskId")
-                        .HasColumnType("integer")
-                        .HasColumnName("task_id");
-
-                    b.Property<int?>("CategoryId")
-                        .HasColumnType("integer")
-                        .HasColumnName("category_id");
-
-                    b.Property<string>("Description")
-                        .HasMaxLength(160)
-                        .HasColumnType("character varying(160)")
-                        .HasColumnName("description");
-
-                    b.Property<DateTime>("DueDate")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("due_date");
-
-                    b.Property<short>("Priority")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("smallint")
-                        .HasDefaultValue((short)1)
-                        .HasColumnName("priority");
-
-                    b.Property<short>("Status")
-                        .HasColumnType("smallint")
-                        .HasColumnName("status");
-
-                    b.Property<string>("Title")
-                        .IsRequired()
-                        .HasMaxLength(60)
-                        .HasColumnType("character varying(60)")
-                        .HasColumnName("title");
-
-                    b.HasKey("TaskId");
-
-                    b.HasIndex("CategoryId");
-
-                    b.ToTable("deleted_task");
                 });
 
             modelBuilder.Entity("TaskManagementSystem.Database.Models.TaskEntity", b =>
@@ -148,16 +109,6 @@ namespace TaskManagementSystem.Migrations
                         .HasDatabaseName("IX_task_status");
 
                     b.ToTable("task");
-                });
-
-            modelBuilder.Entity("TaskManagementSystem.Database.Models.DeletedTaskEntity", b =>
-                {
-                    b.HasOne("TaskManagementSystem.Database.Models.CategoryEntity", "Category")
-                        .WithMany()
-                        .HasForeignKey("CategoryId")
-                        .OnDelete(DeleteBehavior.SetNull);
-
-                    b.Navigation("Category");
                 });
 
             modelBuilder.Entity("TaskManagementSystem.Database.Models.TaskEntity", b =>

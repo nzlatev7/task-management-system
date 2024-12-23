@@ -9,4 +9,6 @@ public sealed class StatusStatisticsDto
     public int NumberOfCompletedTasks { get; set; }
 
     public int NumberOfArchivedTasks { get; set; }
+
+    public int NumberOfLockedTasks { get; set; }
 }
