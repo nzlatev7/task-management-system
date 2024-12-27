@@ -17,7 +17,7 @@ public sealed class TasksService : ITasksService
     private readonly TaskManagementSystemDbContext _dbContext;
     private readonly ICategoryRepository _categoryRepository;
     private readonly ITaskDeleteContext _taskDeleteContext;
-
+    
     public TasksService(
         TaskManagementSystemDbContext dbContext,
         ICategoryRepository categoryRepository,
@@ -87,7 +87,7 @@ public sealed class TasksService : ITasksService
         var updatedRows = await _dbContext.Tasks
             .Where(x => x.Id == taskId && x.Status == Status.Locked)
             .ExecuteUpdateAsync(x => x.SetProperty(x => x.Status, unlockDto.Status));
-
+	
         if (updatedRows is 0)
             throw new NotFoundException(ErrorMessageConstants.LockedTaskWithIdDoesNotExist);
     }
@@ -97,11 +97,7 @@ public sealed class TasksService : ITasksService
         var taskEntity = await _dbContext.Tasks.FindAsync(taskId)
             ?? throw new NotFoundException(ErrorMessageConstants.TaskDoesNotExist);
 
-        if (taskEntity.Status == Status.Locked)
-            throw new ConflictException(ErrorMessageConstants.TaskAlreadyLocked);
-
-        if (taskEntity.Status == Status.Archived)
-            throw new ConflictException(ErrorMessageConstants.ArchivedTaskCanNotBeDeleted);
+        ValidateTaskStatusForDeletion(taskEntity);
 
         var deleteAction = GetDeleteAction(taskEntity.Priority);
 
@@ -116,6 +112,15 @@ public sealed class TasksService : ITasksService
 
         if (!categoryExists)
             throw new BadHttpRequestException(ErrorMessageConstants.CategoryDoesNotExist);
+    }
+
+    private static void ValidateTaskStatusForDeletion(TaskEntity taskEntity)
+    {
+        if (taskEntity.Status == Status.Locked)
+            throw new ConflictException(ErrorMessageConstants.TaskAlreadyLocked);
+
+        if (taskEntity.Status == Status.Archived)
+            throw new ConflictException(ErrorMessageConstants.ArchivedTaskCanNotBeDeleted);
     }
 
     private void ValidateTaskStatusForUpdateAsync(TaskEntity taskEntity, UpdateTaskRequestDto taskDto)

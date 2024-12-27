@@ -1,6 +1,4 @@
-﻿using System.Security.Cryptography.X509Certificates;
-
-namespace TaskManagementSystem.Constants;
+﻿namespace TaskManagementSystem.Constants;
 
 public static class LoggingMessageConstants
 {

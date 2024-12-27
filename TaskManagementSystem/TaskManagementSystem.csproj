@@ -18,4 +18,12 @@
     <PackageReference Include="Scrutor" Version="5.0.2" />
   </ItemGroup>
 
+  <ItemGroup>
+    <EditorConfigFiles Remove="C:\Users\qpo\source\repos\nzlatev7\task-management-system\TaskManagementSystem\.editorconfig" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="C:\Users\qpo\source\repos\nzlatev7\task-management-system\TaskManagementSystem\.editorconfig" />
+  </ItemGroup>
+
 </Project>
