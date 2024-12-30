@@ -15,22 +15,22 @@ namespace TaskManagementSystem.Services;
 public sealed class TasksService : ITasksService
 {
     private readonly TaskManagementSystemDbContext _dbContext;
-    private readonly ICategoryRepository _categoryRepository;
-    private readonly ITaskDeleteContext _taskDeleteContext;
+    private readonly ICategoryChecker _categoryChecker;
+    private readonly ITaskDeleteFactory _taskDeleteFactory;
     
     public TasksService(
         TaskManagementSystemDbContext dbContext,
-        ICategoryRepository categoryRepository,
-        ITaskDeleteContext deleteHandlerFactory)
+        ICategoryChecker categoryChecker,
+        ITaskDeleteFactory taskDeleteFactory)
     {
         _dbContext = dbContext; 
-        _categoryRepository = categoryRepository;
-        _taskDeleteContext = deleteHandlerFactory;
+        _categoryChecker = categoryChecker;
+        _taskDeleteFactory = taskDeleteFactory;
     }
 
     public async Task<TaskResponseDto> CreateTaskAsync(CreateTaskRequestDto taskDto)
     {
-        await ValidatateCategoryExistsAsync(taskDto.CategoryId);
+        await ValidatateCategoryAsync(taskDto.CategoryId);
 
         var taskEntity = taskDto.ToTaskEntityForCreate();
 
@@ -73,7 +73,7 @@ public sealed class TasksService : ITasksService
             ?? throw new NotFoundException(ErrorMessageConstants.TaskDoesNotExist);
 
         ValidateTaskStatusForUpdateAsync(taskEntity, taskDto);
-        await ValidatateCategoryExistsAsync(taskDto.CategoryId);
+        await ValidatateCategoryAsync(taskDto.CategoryId);
 
         taskDto.UpdateTaskEntity(taskEntity);
 
@@ -99,16 +99,16 @@ public sealed class TasksService : ITasksService
 
         ValidateTaskStatusForDeletion(taskEntity);
 
-        var deleteAction = GetDeleteAction(taskEntity.Priority);
+        var strategy = _taskDeleteFactory.GetDeleteStrategy(taskEntity.Priority);
 
-        await _taskDeleteContext.HandleAsync(taskEntity, deleteAction);
+        var deleteAction = await strategy.DeleteAsync(taskEntity, _dbContext);
 
         return deleteAction;
     }
 
-    private async Task ValidatateCategoryExistsAsync(int categoryId)
+    private async Task ValidatateCategoryAsync(int categoryId)
     {
-        var categoryExists = await _categoryRepository.CategoryExistsAsync(categoryId);
+        var categoryExists = await _categoryChecker.CategoryExistsAsync(categoryId);
 
         if (!categoryExists)
             throw new BadHttpRequestException(ErrorMessageConstants.CategoryDoesNotExist);
@@ -137,12 +137,4 @@ public sealed class TasksService : ITasksService
         if (canLockedBeEdited)
             throw new ConflictException(ErrorMessageConstants.LockedTaskCanNotBeEdited);
     }
-
-    private DeleteAction GetDeleteAction(Priority priority) => priority switch
-    {
-        Priority.Low => DeleteAction.Removed,
-        Priority.Medium => DeleteAction.Moved,
-        Priority.High => DeleteAction.Locked,
-        _ => DeleteAction.Removed
-    };
 }

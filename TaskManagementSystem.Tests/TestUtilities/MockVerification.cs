@@ -1,5 +1,8 @@
 ﻿using Microsoft.Extensions.Logging;
 using Moq;
+using TaskManagementSystem.Database;
+using TaskManagementSystem.Database.Models;
+using TaskManagementSystem.Enums;
 using TaskManagementSystem.Interfaces;
 
 namespace TaskManagementSystem.Tests.TestUtilities;
@@ -18,8 +21,18 @@ public static class MockVerification
             Times.Once);
     }
 
-    public static void VerifyCallForCategoryExists(this Mock<ICategoryRepository> categoryRepositoryMock)
+    public static void VerifyCallForCategoryExists(this Mock<ICategoryChecker> categoryCheckerMock)
     {
-        categoryRepositoryMock.Verify(c => c.CategoryExistsAsync(It.IsAny<int>()), Times.Once);
+        categoryCheckerMock.Verify(c => c.CategoryExistsAsync(It.IsAny<int>()), Times.Once);
+    }
+
+    public static void VerifyTaskCallForGetDeleteStrategy(this Mock<ITaskDeleteFactory> taskDeleteFactoryMock)
+    {
+        taskDeleteFactoryMock.Verify(c => c.GetDeleteStrategy(It.IsAny<Priority>()), Times.Once);
+    }
+
+    public static void VerifyTaskStrategyCallForDelete(this Mock<ITaskDeleteStategy> taskDeleteStrategy)
+    {
+        taskDeleteStrategy.Verify(c => c.DeleteAsync(It.IsAny<TaskEntity>(), It.IsAny<TaskManagementSystemDbContext>()), Times.Once);
     }
 }

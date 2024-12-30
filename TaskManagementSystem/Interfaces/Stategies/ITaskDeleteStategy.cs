@@ -1,10 +1,10 @@
-﻿using Microsoft.EntityFrameworkCore;
-using TaskManagementSystem.Database;
+﻿using TaskManagementSystem.Database;
 using TaskManagementSystem.Database.Models;
+using TaskManagementSystem.Enums;
 
 namespace TaskManagementSystem.Interfaces;
 
 public interface ITaskDeleteStategy
 {
-    Task HandleAsync(TaskEntity taskEntity, TaskManagementSystemDbContext dbContext);
+    Task<DeleteAction> DeleteAsync(TaskEntity taskEntity, TaskManagementSystemDbContext dbContext);
 }

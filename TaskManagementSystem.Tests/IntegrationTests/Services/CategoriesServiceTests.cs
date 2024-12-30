@@ -1,4 +1,5 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using Moq;
 using TaskManagementSystem.Constants;
 using TaskManagementSystem.Database;
 using TaskManagementSystem.Database.Models;
@@ -6,19 +7,20 @@ using TaskManagementSystem.DTOs.Request;
 using TaskManagementSystem.DTOs.Response;
 using TaskManagementSystem.Enums;
 using TaskManagementSystem.Exceptions;
-using TaskManagementSystem.Repositories;
+using TaskManagementSystem.Interfaces;
 using TaskManagementSystem.Services;
 using TaskManagementSystem.Tests.Fixtures;
 using TaskManagementSystem.Tests.TestUtilities;
 
-namespace TaskManagementSystem.Tests.IntegrationTests;
+namespace TaskManagementSystem.Tests.IntegrationTests.Services;
 
 public sealed class CategoriesServiceTests : IClassFixture<TestDatabaseFixture>, IAsyncLifetime
 {
     private readonly TaskManagementSystemDbContext _dbContext;
     private readonly TestDataManager _dataGenerator;
-    private readonly CategoryRepository _categoryRepository;
-    private readonly CategoriesSerivce _categoriesService;
+    private readonly Mock<ICategoryChecker> _categoryCheckerMock;
+
+    private readonly ICategoriesService _categoriesService;
 
     private List<CategoryEntity> categories = new();
 
@@ -26,9 +28,9 @@ public sealed class CategoriesServiceTests : IClassFixture<TestDatabaseFixture>,
     {
         _dbContext = fixture.DbContext;
         _dataGenerator = new TestDataManager(_dbContext);
-        _categoryRepository = new CategoryRepository(_dbContext);
-        
-        _categoriesService = new CategoriesSerivce(_dbContext, _categoryRepository);
+        _categoryCheckerMock = new Mock<ICategoryChecker>();
+
+        _categoriesService = new CategoriesSerivce(_dbContext, _categoryCheckerMock.Object);
     }
 
     public async Task InitializeAsync()
@@ -203,7 +205,7 @@ public sealed class CategoriesServiceTests : IClassFixture<TestDatabaseFixture>,
     #region GetTasksByCategory
 
     [Fact]
-    public async Task GetTasksByCategoryAsync_ReturnsTasksForThisCategory()
+    public async Task GetTasksByCategoryAsync_CategoryExists_ReturnsTasksForThisCategory()
     {
         // Arrange
         var targetCategoryId = categories[0].Id;
@@ -211,20 +213,33 @@ public sealed class CategoriesServiceTests : IClassFixture<TestDatabaseFixture>,
         var targetTasks = await _dataGenerator.InsertTasksAsync(count: 2, targetCategoryId);
         await _dataGenerator.InsertTasksAsync(count: 2, categoryId: categories[1].Id);
 
+        _categoryCheckerMock.Setup(x => x.CategoryExistsAsync(targetCategoryId))
+            .ReturnsAsync(true);
+
         // Act
         var resultTasks = await _categoriesService.GetTasksByCategoryAsync(targetCategoryId);
 
         // Assert
         var expectedResultTasks = TestResultBuilder.GetExpectedTasks(targetTasks);
         Assert.Equivalent(expectedResultTasks, resultTasks, strict: true);
+
+        _categoryCheckerMock.VerifyCallForCategoryExists();
     }
 
     [Fact]
     public async Task GetTasksByCategoryAsync_CategoryDoesNotExist_ThrowsNotFoundException()
     {
+        // Arrange
+        var categoryId = 1000;
+
+        _categoryCheckerMock.Setup(x => x.CategoryExistsAsync(categoryId))
+            .ReturnsAsync(false);
+
         // Act & Assert
-        var exception = await Assert.ThrowsAsync<NotFoundException>(() => _categoriesService.GetTasksByCategoryAsync(categoryId: 1000));
+        var exception = await Assert.ThrowsAsync<NotFoundException>(() => _categoriesService.GetTasksByCategoryAsync(categoryId));
         Assert.Equal(ErrorMessageConstants.CategoryDoesNotExist, exception.Message);
+
+        _categoryCheckerMock.VerifyCallForCategoryExists();
     }
 
     #endregion
@@ -242,6 +257,9 @@ public sealed class CategoriesServiceTests : IClassFixture<TestDatabaseFixture>,
         var targetLockedTasks = await _dataGenerator.InsertTasksAsync(count: 1, targetCategoryId, tasksStatus: Status.Locked);
 
         await _dataGenerator.InsertTasksAsync(count: 2, categoryId: categories[1].Id);
+
+        _categoryCheckerMock.Setup(x => x.CategoryExistsAsync(targetCategoryId))
+            .ReturnsAsync(true);
 
         // Act
         var resultCompletionStatus = await _categoriesService.GetCompletionStatusForCategoryAsync(targetCategoryId);
@@ -267,14 +285,24 @@ public sealed class CategoriesServiceTests : IClassFixture<TestDatabaseFixture>,
             .FirstOrDefaultAsync();
 
         Assert.Equal(expectedCompletionStatus, updatedCompletionPercentage);
+
+        _categoryCheckerMock.VerifyCallForCategoryExists();
     }
 
     [Fact]
     public async Task GetCompletionStatusForCategoryAsync_CategoryDoesNotExist_ThrowsNotFoundException()
     {
+        // Arrange
+        var categoryId = 1000;
+
+        _categoryCheckerMock.Setup(x => x.CategoryExistsAsync(categoryId))
+            .ReturnsAsync(false);
+
         // Act & Assert
-        var exception = await Assert.ThrowsAsync<NotFoundException>(() => _categoriesService.GetCompletionStatusForCategoryAsync(categoryId: 1000));
+        var exception = await Assert.ThrowsAsync<NotFoundException>(() => _categoriesService.GetCompletionStatusForCategoryAsync(categoryId));
         Assert.Equal(ErrorMessageConstants.CategoryDoesNotExist, exception.Message);
+
+        _categoryCheckerMock.VerifyCallForCategoryExists();
     }
 
     [Fact]

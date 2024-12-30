@@ -2,7 +2,6 @@
 using TaskManagementSystem.Database;
 using TaskManagementSystem.Enums;
 using Microsoft.EntityFrameworkCore;
-using System.Threading.Tasks;
 
 namespace TaskManagementSystem.Tests.TestUtilities;
 

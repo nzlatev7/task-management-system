@@ -1,33 +1,28 @@
-﻿using Microsoft.Extensions.Logging;
+﻿using Microsoft.AspNetCore.Mvc;
 using Moq;
-using TaskManagementSystem.Constants;
+using TaskManagementSystem.Controllers;
 using TaskManagementSystem.DTOs.Request;
 using TaskManagementSystem.DTOs.Response;
 using TaskManagementSystem.Enums;
 using TaskManagementSystem.Interfaces;
-using TaskManagementSystem.LoggingDecorators;
-using TaskManagementSystem.Tests.TestUtilities;
 
-namespace TaskManagementSystem.Tests.UnitTests;
-    
-public sealed class TasksServiceLoggingDecoratorTests
+namespace TaskManagementSystem.Tests.UnitTests.Controllers;
+
+public sealed class TasksControllerTests
 {
     private readonly Mock<ITasksService> _tasksServiceMock;
-    private readonly Mock<ILogger<ITasksService>> _loggerMock;
-    private readonly TasksServiceLoggingDecorator _tasksServiceLoggingDecorator;
+    private readonly TasksController _tasksController;
 
-    public TasksServiceLoggingDecoratorTests()
+    public TasksControllerTests()
     {
         _tasksServiceMock = new Mock<ITasksService>();
-        _loggerMock = new Mock<ILogger<ITasksService>>();
-
-        _tasksServiceLoggingDecorator = new TasksServiceLoggingDecorator(_tasksServiceMock.Object, _loggerMock.Object);
+        _tasksController = new TasksController(_tasksServiceMock.Object);
     }
 
     #region CreateTask
 
     [Fact]
-    public async Task CreateTaskAsync_LogsCreateInformation_ReturnsCreatedTask()
+    public async Task CreateTask_ReturnsOkResultWithCreatedTask()
     {
         // Arrange
         var taskForCreate = new CreateTaskRequestDto
@@ -52,15 +47,13 @@ public sealed class TasksServiceLoggingDecoratorTests
             .ReturnsAsync(expectedTask);
 
         // Act
-        var result = await _tasksServiceLoggingDecorator.CreateTaskAsync(taskForCreate);
+        var result = await _tasksController.CreateTask(taskForCreate);
 
         // Assert
-        Assert.Equal(expectedTask, result);
+        var okResult = Assert.IsType<OkObjectResult>(result.Result);
+        Assert.Equal(expectedTask, okResult.Value);
 
         _tasksServiceMock.Verify(services => services.CreateTaskAsync(taskForCreate), Times.Once);
-
-        var message = string.Format(LoggingMessageConstants.TaskCreatedSuccessfully, result.Id, result.CategoryId);
-        _loggerMock.VerifyCallForLogInformationAndMessage(message);
     }
 
     #endregion
@@ -68,7 +61,7 @@ public sealed class TasksServiceLoggingDecoratorTests
     #region GetAllTasks
 
     [Fact]
-    public async Task GetAllTasksAsync_SortByInstructionsProvided_ReturnsAllTasks_OrderedBySortByInstructions()
+    public async Task GetAllTasks_SortByInstructionsProvided_ReturnsOkResultWithAllTasks_OrderedBySortByInstructions()
     {
         // Arrange
         var expectedResponse = new List<TaskResponseDto>()
@@ -87,10 +80,11 @@ public sealed class TasksServiceLoggingDecoratorTests
             .ReturnsAsync(expectedResponse);
 
         // Act
-        var result = await _tasksServiceLoggingDecorator.GetAllTasksAsync(sortByInstructions);
+        var result = await _tasksController.GetAllTasks(sortByInstructions);
 
         // Assert
-        Assert.Equal(expectedResponse, result);
+        var okResult = Assert.IsType<OkObjectResult>(result.Result);
+        Assert.Equal(expectedResponse, okResult.Value);
 
         _tasksServiceMock.Verify(services => services.GetAllTasksAsync(sortByInstructions), Times.Once);
     }
@@ -100,7 +94,7 @@ public sealed class TasksServiceLoggingDecoratorTests
     #region GetTaskById
 
     [Fact]
-    public async Task GetTaskByIdAsync_ReturnsTheSpecifiedTask()
+    public async Task GetTaskById_ReturnsOkResultWithTheSpecifiedTask()
     {
         // Arrange
         var taskId = 1;
@@ -113,10 +107,11 @@ public sealed class TasksServiceLoggingDecoratorTests
             .ReturnsAsync(expectedTask);
 
         // Act
-        var result = await _tasksServiceLoggingDecorator.GetTaskByIdAsync(taskId);
+        var result = await _tasksController.GetTaskById(taskId);
 
         // Assert
-        Assert.Equal(expectedTask, result);
+        var okResult = Assert.IsType<OkObjectResult>(result.Result);
+        Assert.Equal(expectedTask, okResult.Value);
 
         _tasksServiceMock.Verify(services => services.GetTaskByIdAsync(taskId), Times.Once);
     }
@@ -126,7 +121,7 @@ public sealed class TasksServiceLoggingDecoratorTests
     #region UpdateTask
 
     [Fact]
-    public async Task UpdateTaskAsync_LogsUpdateInformation_ReturnsUpdatedTask()
+    public async Task UpdateTask_ReturnsOkResultWithUpdatedTask()
     {
         // Arrange
         var taskId = 1;
@@ -147,23 +142,21 @@ public sealed class TasksServiceLoggingDecoratorTests
             .ReturnsAsync(expectedTask);
 
         // Act
-        var result = await _tasksServiceLoggingDecorator.UpdateTaskAsync(taskId, taskForUpdate);
+        var result = await _tasksController.UpdateTask(taskId, taskForUpdate);
 
         // Assert
-        Assert.Equal(expectedTask, result);
+        var okResult = Assert.IsType<OkObjectResult>(result.Result);
+        Assert.Equal(expectedTask, okResult.Value);
 
         _tasksServiceMock.Verify(services => services.UpdateTaskAsync(taskId, taskForUpdate), Times.Once);
-
-        var message = string.Format(LoggingMessageConstants.TaskUpdatedSuccessfully, taskId);
-        _loggerMock.VerifyCallForLogInformationAndMessage(message);
     }
 
     #endregion
 
-    #region UnLockTask
+    #region UnlockTask
 
     [Fact]
-    public async Task UnlockTaskAsync_LogsUnlockInformation()
+    public async Task UnlockTask_ReturnsNoContentResult()
     {
         // Arrange
         var taskId = 1;
@@ -173,51 +166,39 @@ public sealed class TasksServiceLoggingDecoratorTests
             Status = Status.InProgress
         };
 
+
         // Act
-        await _tasksServiceLoggingDecorator.UnlockTaskAsync(taskId, unlockDto);
+        var result = await _tasksController.UnlockTask(taskId, unlockDto);
 
         // Assert
-        _tasksServiceMock.Verify(services => services.UnlockTaskAsync(taskId, unlockDto), Times.Once);
+        var okResult = Assert.IsType<NoContentResult>(result);
 
-        var message = string.Format(LoggingMessageConstants.TaskUnlockedSuccessfully, taskId);
-        _loggerMock.VerifyCallForLogInformationAndMessage(message);
+        _tasksServiceMock.Verify(services => services.UnlockTaskAsync(taskId, unlockDto), Times.Once);
     }
 
     #endregion
 
     #region DeleteTask
 
-    [Theory]
-    [InlineData(DeleteAction.Removed)]
-    [InlineData(DeleteAction.Moved)]
-    [InlineData(DeleteAction.Locked)]
-    public async Task DeleteTaskAsync_LogsProperDeleteInformation_ReturnsDeleteAction(DeleteAction deleteAction)
+    [Fact]
+    public async Task DeleteTask_ReturnsOkResultWithDeleteAction()
     {
         // Arrange
         var taskId = 1;
+        var expectedDeleteAction = DeleteAction.Locked;
 
         _tasksServiceMock.Setup(service => service.DeleteTaskAsync(taskId))
-            .ReturnsAsync(deleteAction);
+            .ReturnsAsync(expectedDeleteAction);
 
         // Act
-        var result = await _tasksServiceLoggingDecorator.DeleteTaskAsync(taskId);
+        var result = await _tasksController.DeleteTask(taskId);
 
         // Assert
-        Assert.Equal(deleteAction, result);
+        var okResult = Assert.IsType<OkObjectResult>(result);
+        Assert.Equal(expectedDeleteAction, okResult.Value);
 
         _tasksServiceMock.Verify(services => services.DeleteTaskAsync(taskId), Times.Once);
-
-        var properMessage = GetDeleteActionMessage(deleteAction, taskId);
-        _loggerMock.VerifyCallForLogInformationAndMessage(properMessage);
     }
 
     #endregion
-
-    private string GetDeleteActionMessage(DeleteAction deleteAction, int taskId) => deleteAction switch
-    {
-        DeleteAction.Removed => string.Format(LoggingMessageConstants.TaskRemovedSuccessfully, taskId),
-        DeleteAction.Moved => string.Format(LoggingMessageConstants.TaskMovedSuccessfully, taskId),
-        DeleteAction.Locked => string.Format(LoggingMessageConstants.TaskLockedSuccessfully, taskId),
-        _ => string.Empty
-    };
 }

@@ -2,13 +2,13 @@
 using TaskManagementSystem.Database;
 using TaskManagementSystem.Interfaces;
 
-namespace TaskManagementSystem.Repositories;
+namespace TaskManagementSystem.Checkers;
 
-public class CategoryRepository : ICategoryRepository
+public class CategoryChecker : ICategoryChecker
 {
     private readonly TaskManagementSystemDbContext _dbContext;
 
-    public CategoryRepository(TaskManagementSystemDbContext dbContext)
+    public CategoryChecker(TaskManagementSystemDbContext dbContext)
     {
         _dbContext = dbContext;
     }

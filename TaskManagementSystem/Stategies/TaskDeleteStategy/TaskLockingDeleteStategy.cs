@@ -7,10 +7,14 @@ namespace TaskManagementSystem.TaskDeleteStategy;
 
 public class TaskLockingDeleteStategy : ITaskDeleteStategy
 {
-    public async Task HandleAsync(TaskEntity taskEntity, TaskManagementSystemDbContext dbContext)
+    private const DeleteAction deleteAction = DeleteAction.Locked;
+
+    public async Task<DeleteAction> DeleteAsync(TaskEntity taskEntity, TaskManagementSystemDbContext dbContext)
     {
         taskEntity.Status = Status.Locked;
 
         await dbContext.SaveChangesAsync();
+
+        return deleteAction;
     }
 }

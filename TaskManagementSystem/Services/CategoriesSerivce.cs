@@ -14,14 +14,14 @@ namespace TaskManagementSystem.Services;
 public sealed class CategoriesSerivce : ICategoriesService
 {
     private readonly TaskManagementSystemDbContext _dbContext;
-    private readonly ICategoryRepository _categoryRepository;
+    private readonly ICategoryChecker _categoryChecker;
 
     public CategoriesSerivce(
         TaskManagementSystemDbContext dbContext,
-        ICategoryRepository categoryRepository)
+        ICategoryChecker categoryChecker)
     {
         _dbContext = dbContext;
-        _categoryRepository = categoryRepository;
+        _categoryChecker = categoryChecker;
     }
 
     public async Task<CategoryResponseDto> CreateCategoryAsync(CategoryRequestDto categoryDto)
@@ -127,7 +127,7 @@ public sealed class CategoriesSerivce : ICategoriesService
 
     private async Task ValidateCategoryAsync(int categoryId)
     {
-        var exist = await _categoryRepository.CategoryExistsAsync(categoryId);
+        var exist = await _categoryChecker.CategoryExistsAsync(categoryId);
         if (exist is false)
             throw new NotFoundException(ErrorMessageConstants.CategoryDoesNotExist);
     }
@@ -138,9 +138,13 @@ public sealed class CategoriesSerivce : ICategoriesService
 
         var validTasksCount = statusStatistics.NumberOfPendingTasks + statusStatistics.NumberOfInProgressTasks + statusStatistics.NumberOfCompletedTasks;
         if (validTasksCount == 0)
+        {
             completionPercentage = 0; // as there's nothing to measure progress against, so completion percentage is 0%
-
-        completionPercentage = (short)((statusStatistics.NumberOfCompletedTasks / (double)validTasksCount) * 100);
+        }
+        else
+        {
+            completionPercentage = (short)((statusStatistics.NumberOfCompletedTasks / (double)validTasksCount) * 100);
+        }
 
         return completionPercentage;
     }

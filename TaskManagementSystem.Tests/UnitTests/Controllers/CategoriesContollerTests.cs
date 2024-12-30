@@ -5,7 +5,7 @@ using TaskManagementSystem.DTOs.Request;
 using TaskManagementSystem.DTOs.Response;
 using TaskManagementSystem.Interfaces;
 
-namespace TaskManagementSystem.Tests.UnitTests;
+namespace TaskManagementSystem.Tests.UnitTests.Controllers;
 
 public sealed class CategoriesContollerTests
 {
@@ -192,7 +192,7 @@ public sealed class CategoriesContollerTests
 
     [Fact]
     public async Task GetCompletionStatusForCategory_ReturnsOkResultWithCategoryCompletionStatus()
-    {   
+    {
         int categoryId = 1;
 
         var expectedResponse = new CategoryCompletionStatusResponseDto()

@@ -1,6 +1,4 @@
-﻿using System.Reflection.Metadata.Ecma335;
-
-namespace TaskManagementSystem.DTOs.Response;
+﻿namespace TaskManagementSystem.DTOs.Response;
 
 public sealed class CategoryResponseDto
 {

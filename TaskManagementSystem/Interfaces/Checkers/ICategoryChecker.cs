@@ -1,6 +1,6 @@
 ﻿namespace TaskManagementSystem.Interfaces;
 
-public interface ICategoryRepository
+public interface ICategoryChecker
 {
     Task<bool> CategoryExistsAsync(int categoryId);
 }

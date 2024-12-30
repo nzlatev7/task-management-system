@@ -5,7 +5,7 @@ using TaskManagementSystem.Exceptions;
 using TaskManagementSystem.TaskDeleteStategy;
 using TaskManagementSystem.Interfaces;
 using TaskManagementSystem.LoggingDecorators;
-using TaskManagementSystem.Repositories;
+using TaskManagementSystem.Checkers;
 using TaskManagementSystem.Services;
 
 namespace TaskManagementSystem.Extensions;
@@ -24,7 +24,7 @@ public static class DependencyInjectionExtensions
 
     public static IServiceCollection AddRepositories(this IServiceCollection services)
     {
-        services.AddScoped<ICategoryRepository, CategoryRepository>();
+        services.AddScoped<ICategoryChecker, CategoryChecker>();
 
         return services;
     }
@@ -38,7 +38,7 @@ public static class DependencyInjectionExtensions
         services.Decorate<ICategoriesService, CategoriesServiceLoggingDecorator>();
 
         services.AddScoped<IReportsService, ReportsService>();
-        services.AddScoped<ITaskDeleteContext, TaskDeleteContext>();
+        services.AddScoped<ITaskDeleteFactory, TaskDeleteFactory>();
 
         return services;
     }

@@ -7,7 +7,7 @@ using TaskManagementSystem.Interfaces;
 using TaskManagementSystem.LoggingDecorators;
 using TaskManagementSystem.Tests.TestUtilities;
 
-namespace TaskManagementSystem.Tests.UnitTests;
+namespace TaskManagementSystem.Tests.UnitTests.LoggingDecorators;
 
 public sealed class CategoriesServiceLoggingDecoratorTests
 {
