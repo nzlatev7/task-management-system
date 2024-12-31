@@ -60,7 +60,7 @@ public sealed class TasksServiceLoggingDecoratorTests
         _tasksServiceMock.Verify(services => services.CreateTaskAsync(taskForCreate), Times.Once);
 
         var message = string.Format(LoggingMessageConstants.TaskCreatedSuccessfully, result.Id, result.CategoryId);
-        _loggerMock.VerifyCallForLogInformationAndMessage(message);
+        _loggerMock.VerifyLogInformationMessage(message);
     }
 
     #endregion
@@ -155,7 +155,7 @@ public sealed class TasksServiceLoggingDecoratorTests
         _tasksServiceMock.Verify(services => services.UpdateTaskAsync(taskId, taskForUpdate), Times.Once);
 
         var message = string.Format(LoggingMessageConstants.TaskUpdatedSuccessfully, taskId);
-        _loggerMock.VerifyCallForLogInformationAndMessage(message);
+        _loggerMock.VerifyLogInformationMessage(message);
     }
 
     #endregion
@@ -180,7 +180,7 @@ public sealed class TasksServiceLoggingDecoratorTests
         _tasksServiceMock.Verify(services => services.UnlockTaskAsync(taskId, unlockDto), Times.Once);
 
         var message = string.Format(LoggingMessageConstants.TaskUnlockedSuccessfully, taskId);
-        _loggerMock.VerifyCallForLogInformationAndMessage(message);
+        _loggerMock.VerifyLogInformationMessage(message);
     }
 
     #endregion
@@ -208,7 +208,7 @@ public sealed class TasksServiceLoggingDecoratorTests
         _tasksServiceMock.Verify(services => services.DeleteTaskAsync(taskId), Times.Once);
 
         var properMessage = GetDeleteActionMessage(deleteAction, taskId);
-        _loggerMock.VerifyCallForLogInformationAndMessage(properMessage);
+        _loggerMock.VerifyLogInformationMessage(properMessage);
     }
 
     #endregion

@@ -53,7 +53,7 @@ public sealed class CategoriesServiceLoggingDecoratorTests
         _categoriesServiceMock.Verify(service => service.CreateCategoryAsync(categoryForCreate), Times.Once);
 
         var message = string.Format(LoggingMessageConstants.CategoryCreatedSuccessfully, result.Id);
-        _loggerMock.VerifyCallForLogInformationAndMessage(message);
+        _loggerMock.VerifyLogInformationMessage(message);
     }
 
     #endregion
@@ -142,7 +142,7 @@ public sealed class CategoriesServiceLoggingDecoratorTests
         _categoriesServiceMock.Verify(service => service.UpdateCategoryAsync(categoryId, categoryForUpdate), Times.Once);
 
         var message = string.Format(LoggingMessageConstants.CategoryUpdatedSuccessfully, categoryId);
-        _loggerMock.VerifyCallForLogInformationAndMessage(message);
+        _loggerMock.VerifyLogInformationMessage(message);
     }
 
     #endregion
@@ -162,7 +162,7 @@ public sealed class CategoriesServiceLoggingDecoratorTests
         _categoriesServiceMock.Verify(service => service.DeleteCategoryAsync(categoryId), Times.Once);
 
         var message = string.Format(LoggingMessageConstants.CategoryDeletedSuccessfully, categoryId);
-        _loggerMock.VerifyCallForLogInformationAndMessage(message);
+        _loggerMock.VerifyLogInformationMessage(message);
     }
 
     #endregion

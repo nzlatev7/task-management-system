@@ -1,4 +1,5 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using TaskManagementSystem.Constants;
 using TaskManagementSystem.Database;
 using Testcontainers.PostgreSql;
 
@@ -6,8 +7,6 @@ namespace TaskManagementSystem.Tests.Fixtures;
 
 public sealed class TestDatabaseFixture : IAsyncLifetime
 {
-    private const string DbContextNotInitialized = "DbContext is not initialized.";
-
     private TaskManagementSystemDbContext? _dbContext;
     private readonly PostgreSqlContainer _container;
 
@@ -19,7 +18,7 @@ public sealed class TestDatabaseFixture : IAsyncLifetime
 
     public TaskManagementSystemDbContext DbContext 
     {
-        get => _dbContext ?? throw new InvalidOperationException(DbContextNotInitialized);
+        get => _dbContext ?? throw new InvalidOperationException(ErrorMessageConstants.DbContextNotInitialized);
         private set => _dbContext = value;
     }
 

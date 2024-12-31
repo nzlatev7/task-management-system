@@ -4,7 +4,7 @@ using TaskManagementSystem.Enums;
 
 namespace TaskManagementSystem.Interfaces;
 
-public interface ITaskDeleteStategy
+public interface ITaskDeleteOrchestrator
 {
-    Task<DeleteAction> DeleteAsync(TaskEntity taskEntity, TaskManagementSystemDbContext dbContext);
+    public Task<DeleteAction> ExecuteDeletionAsync(TaskEntity taskEntity, TaskManagementSystemDbContext dbContext);
 }

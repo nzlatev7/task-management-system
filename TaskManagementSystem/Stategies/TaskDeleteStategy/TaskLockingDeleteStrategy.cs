@@ -5,13 +5,18 @@ using TaskManagementSystem.Interfaces;
 
 namespace TaskManagementSystem.TaskDeleteStategy;
 
-public class TaskRemovingDeleteStategy : ITaskDeleteStategy
+public class TaskLockingDeleteStrategy : ITaskDeleteStrategy
 {
-    private const DeleteAction deleteAction = DeleteAction.Removed;
+    private const DeleteAction deleteAction = DeleteAction.Locked;
+
+    public bool CanExecute(TaskEntity taskEntity)
+    {
+        return taskEntity.Priority == Priority.High;
+    }
 
     public async Task<DeleteAction> DeleteAsync(TaskEntity taskEntity, TaskManagementSystemDbContext dbContext)
     {
-        dbContext.Tasks.Remove(taskEntity);
+        taskEntity.Status = Status.Locked;
 
         await dbContext.SaveChangesAsync();
 

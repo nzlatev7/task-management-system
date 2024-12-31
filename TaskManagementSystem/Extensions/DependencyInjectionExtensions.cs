@@ -38,7 +38,11 @@ public static class DependencyInjectionExtensions
         services.Decorate<ICategoriesService, CategoriesServiceLoggingDecorator>();
 
         services.AddScoped<IReportsService, ReportsService>();
-        services.AddScoped<ITaskDeleteFactory, TaskDeleteFactory>();
+
+        services.AddScoped<ITaskDeleteOrchestrator, TaskDeleteOrchestrator>();
+        services.AddScoped<ITaskDeleteStrategy, TaskRemovingDeleteStrategy>();
+        services.AddScoped<ITaskDeleteStrategy, TaskMovingDeleteStrategy>();
+        services.AddScoped<ITaskDeleteStrategy, TaskLockingDeleteStrategy>();
 
         return services;
     }

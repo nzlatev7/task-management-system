@@ -6,9 +6,14 @@ using TaskManagementSystem.Interfaces;
 
 namespace TaskManagementSystem.TaskDeleteStategy;
 
-public sealed class TaskMovingDeleteStategy : ITaskDeleteStategy
+public sealed class TaskMovingDeleteStrategy : ITaskDeleteStrategy
 {
     private const DeleteAction deleteAction = DeleteAction.Moved;
+
+    public bool CanExecute(TaskEntity taskEntity)
+    {
+        return taskEntity.Priority == Priority.Medium;
+    }
 
     public async Task<DeleteAction> DeleteAsync(TaskEntity taskEntity, TaskManagementSystemDbContext dbContext)
     {

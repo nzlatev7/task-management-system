@@ -7,6 +7,7 @@ namespace TaskManagementSystem.Database
 {
     public class TaskManagementSystemDbContext : DbContext
     {
+        public TaskManagementSystemDbContext() { }
         public TaskManagementSystemDbContext(DbContextOptions<TaskManagementSystemDbContext> options) : base(options) { }
 
         public DbSet<TaskEntity> Tasks { get; set; } = default!;

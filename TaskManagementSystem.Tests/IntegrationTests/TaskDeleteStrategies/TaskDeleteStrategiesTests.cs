@@ -1,4 +1,5 @@
 ﻿using TaskManagementSystem.Database;
+using TaskManagementSystem.Database.Models;
 using TaskManagementSystem.Enums;
 using TaskManagementSystem.Interfaces;
 using TaskManagementSystem.TaskDeleteStategy;
@@ -12,7 +13,7 @@ public sealed class TaskDeleteStrategiesTests : IClassFixture<TestDatabaseFixtur
     private readonly TaskManagementSystemDbContext _dbContext;
     private readonly TestDataManager _dataGenerator;
 
-    private ITaskDeleteStategy _taskDeleteStategy = null!;
+    private ITaskDeleteStrategy _taskDeleteStategy = null!;
 
     private int _targetCategoryId;
 
@@ -41,7 +42,7 @@ public sealed class TaskDeleteStrategiesTests : IClassFixture<TestDatabaseFixtur
         var tasks = await _dataGenerator.InsertTasksAsync(count: 2, _targetCategoryId, tasksPriority: Priority.Low);
         var targetTask = tasks[0];
 
-        _taskDeleteStategy = new TaskRemovingDeleteStategy();
+        _taskDeleteStategy = new TaskRemovingDeleteStrategy();
 
         // Act
         var result = await _taskDeleteStategy.DeleteAsync(targetTask, _dbContext);
@@ -57,6 +58,46 @@ public sealed class TaskDeleteStrategiesTests : IClassFixture<TestDatabaseFixtur
         Assert.Null(removedTask);
     }
 
+    [Fact]
+    public void CanExecute_LowPriorityTask_ReturnsTrue()
+    {
+        // Arrange
+        var taskEntity = new TaskEntity()
+        {
+            Title = "Test",
+            Priority = Priority.Low,
+        };
+
+        _taskDeleteStategy = new TaskRemovingDeleteStrategy();
+
+        // Act
+        var result = _taskDeleteStategy.CanExecute(taskEntity);
+
+        // Assert
+        Assert.True(result);
+    }
+
+    [Theory]
+    [InlineData(Priority.Medium)]
+    [InlineData(Priority.High)]
+    public void CanExecute_Removing_InvalidPriorityTask_ReturnsFalse(Priority priority)
+    {
+        // Arrange
+        var taskEntity = new TaskEntity()
+        {
+            Title = "Test",
+            Priority = priority,
+        };
+
+        _taskDeleteStategy = new TaskRemovingDeleteStrategy();
+
+        // Act
+        var result = _taskDeleteStategy.CanExecute(taskEntity);
+
+        // Assert
+        Assert.False(result);
+    }
+
     #endregion
 
     #region MovingDeleteStategy
@@ -70,7 +111,7 @@ public sealed class TaskDeleteStrategiesTests : IClassFixture<TestDatabaseFixtur
 
         var deletedTasksCount = _dbContext.DeletedTasks.Count();
 
-        _taskDeleteStategy = new TaskMovingDeleteStategy();
+        _taskDeleteStategy = new TaskMovingDeleteStrategy();
 
         // Act
         var result = await _taskDeleteStategy.DeleteAsync(targetTask, _dbContext);
@@ -97,6 +138,46 @@ public sealed class TaskDeleteStrategiesTests : IClassFixture<TestDatabaseFixtur
         Assert.Equivalent(expectedDeletedTask, insertedDeletedTask, strict: true);
     }
 
+    [Fact]
+    public void CanExecute_MediumPriorityTask_ReturnsTrue()
+    {
+        // Arrange
+        var taskEntity = new TaskEntity()
+        {
+            Title = "Test",
+            Priority = Priority.Medium,
+        };
+
+        _taskDeleteStategy = new TaskMovingDeleteStrategy();
+
+        // Act
+        var result = _taskDeleteStategy.CanExecute(taskEntity);
+
+        // Assert
+        Assert.True(result);
+    }
+
+    [Theory]
+    [InlineData(Priority.Low)]
+    [InlineData(Priority.High)]
+    public void CanExecute_Moving_InvalidPriorityTask_ReturnsFalse(Priority priority)
+    {
+        // Arrange
+        var taskEntity = new TaskEntity()
+        {
+            Title = "Test",
+            Priority = priority,
+        };
+
+        _taskDeleteStategy = new TaskMovingDeleteStrategy();
+
+        // Act
+        var result = _taskDeleteStategy.CanExecute(taskEntity);
+
+        // Assert
+        Assert.False(result);
+    }
+
     #endregion
 
     #region LockingDeleteStategy
@@ -108,7 +189,7 @@ public sealed class TaskDeleteStrategiesTests : IClassFixture<TestDatabaseFixtur
         var tasks = await _dataGenerator.InsertTasksAsync(count: 2, _targetCategoryId, tasksStatus: Status.InProgress, tasksPriority: Priority.High);
         var targetTask = tasks[0];
 
-        _taskDeleteStategy = new TaskLockingDeleteStategy();
+        _taskDeleteStategy = new TaskLockingDeleteStrategy();
 
         // Act
         var result = await _taskDeleteStategy.DeleteAsync(targetTask, _dbContext);
@@ -119,6 +200,46 @@ public sealed class TaskDeleteStrategiesTests : IClassFixture<TestDatabaseFixtur
         var updatedTask = await _dbContext.Tasks.FindAsync(targetTask.Id);
         Assert.NotNull(updatedTask);
         Assert.Equal(Status.Locked, updatedTask.Status);
+    }
+
+    [Fact]
+    public void CanExecute_HighPriorityTask_ReturnsTrue()
+    {
+        // Arrange
+        var taskEntity = new TaskEntity()
+        {
+            Title = "Test",
+            Priority = Priority.High,
+        };
+
+        _taskDeleteStategy = new TaskLockingDeleteStrategy();
+
+        // Act
+        var result = _taskDeleteStategy.CanExecute(taskEntity);
+
+        // Assert
+        Assert.True(result);
+    }
+
+    [Theory]
+    [InlineData(Priority.Low)]
+    [InlineData(Priority.Medium)]
+    public void CanExecute_Locking_InvalidPriorityTask_ReturnsFalse(Priority priority)
+    {
+        // Arrange
+        var taskEntity = new TaskEntity()
+        {
+            Title = "Test",
+            Priority = priority,
+        };
+
+        _taskDeleteStategy = new TaskLockingDeleteStrategy();
+
+        // Act
+        var result = _taskDeleteStategy.CanExecute(taskEntity);
+
+        // Assert
+        Assert.False(result);
     }
 
     #endregion

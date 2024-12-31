@@ -26,4 +26,6 @@ public static class ErrorMessageConstants
     public const string LockedTaskCanNotBeEdited = "Locked Task can not be edited";
     public const string TaskAlreadyLocked = "Task is already Locked";
 
+    public const string DbContextNotInitialized = "DbContext is not initialized.";
+    public const string NoStrategyFound = "No strategy found";
 }

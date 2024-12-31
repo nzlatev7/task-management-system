@@ -16,16 +16,16 @@ public sealed class TasksService : ITasksService
 {
     private readonly TaskManagementSystemDbContext _dbContext;
     private readonly ICategoryChecker _categoryChecker;
-    private readonly ITaskDeleteFactory _taskDeleteFactory;
+    private readonly ITaskDeleteOrchestrator _taskDeleteOrchestrator;
     
     public TasksService(
         TaskManagementSystemDbContext dbContext,
         ICategoryChecker categoryChecker,
-        ITaskDeleteFactory taskDeleteFactory)
+        ITaskDeleteOrchestrator taskDeleteOrchestrator)
     {
         _dbContext = dbContext; 
         _categoryChecker = categoryChecker;
-        _taskDeleteFactory = taskDeleteFactory;
+        _taskDeleteOrchestrator = taskDeleteOrchestrator;
     }
 
     public async Task<TaskResponseDto> CreateTaskAsync(CreateTaskRequestDto taskDto)
@@ -99,9 +99,7 @@ public sealed class TasksService : ITasksService
 
         ValidateTaskStatusForDeletion(taskEntity);
 
-        var strategy = _taskDeleteFactory.GetDeleteStrategy(taskEntity.Priority);
-
-        var deleteAction = await strategy.DeleteAsync(taskEntity, _dbContext);
+        var deleteAction = await _taskDeleteOrchestrator.ExecuteDeletionAsync(taskEntity, _dbContext);
 
         return deleteAction;
     }

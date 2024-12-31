@@ -19,8 +19,8 @@ public sealed class TasksServiceTests : IClassFixture<TestDatabaseFixture>, IAsy
     private readonly TaskManagementSystemDbContext _dbContext;
     private readonly TestDataManager _dataGenerator;
 
-    private readonly Mock<ITaskDeleteFactory> _taskDeleteFactory;
-    private readonly Mock<ICategoryChecker> _categoryRepositoryMock;
+    private readonly Mock<ITaskDeleteOrchestrator> _taskDeleteOrchestrator;
+    private readonly Mock<ICategoryChecker> _categoryCheckerMock;
 
     private readonly ITasksService _tasksService;
 
@@ -32,10 +32,10 @@ public sealed class TasksServiceTests : IClassFixture<TestDatabaseFixture>, IAsy
         _dbContext = fixture.DbContext;
         _dataGenerator = new TestDataManager(_dbContext);
 
-        _taskDeleteFactory = new Mock<ITaskDeleteFactory>();
-        _categoryRepositoryMock = new Mock<ICategoryChecker>();
+        _taskDeleteOrchestrator = new Mock<ITaskDeleteOrchestrator>();
+        _categoryCheckerMock = new Mock<ICategoryChecker>();
 
-        _tasksService = new TasksService(_dbContext, _categoryRepositoryMock.Object, _taskDeleteFactory.Object);
+        _tasksService = new TasksService(_dbContext, _categoryCheckerMock.Object, _taskDeleteOrchestrator.Object);
     }
 
     public async Task InitializeAsync()
@@ -65,7 +65,7 @@ public sealed class TasksServiceTests : IClassFixture<TestDatabaseFixture>, IAsy
             CategoryId = _targetCategoryId
         };
 
-        _categoryRepositoryMock.Setup(c => c.CategoryExistsAsync(taskDto.CategoryId))
+        _categoryCheckerMock.Setup(c => c.CategoryExistsAsync(taskDto.CategoryId))
             .ReturnsAsync(true);
 
         // Act
@@ -84,7 +84,7 @@ public sealed class TasksServiceTests : IClassFixture<TestDatabaseFixture>, IAsy
         Assert.NotNull(savedTask);
         Assert.Equivalent(expectedTask, savedTask);
 
-        _categoryRepositoryMock.VerifyCallForCategoryExists();
+        _categoryCheckerMock.VerifyCategoryExistsCall();
     }
 
     [Fact]
@@ -97,14 +97,14 @@ public sealed class TasksServiceTests : IClassFixture<TestDatabaseFixture>, IAsy
             CategoryId = 10000
         };
 
-        _categoryRepositoryMock.Setup(c => c.CategoryExistsAsync(taskDto.CategoryId))
+        _categoryCheckerMock.Setup(c => c.CategoryExistsAsync(taskDto.CategoryId))
             .ReturnsAsync(false);
 
         // Act & Assert
         var exception = await Assert.ThrowsAsync<BadHttpRequestException>(() => _tasksService.CreateTaskAsync(taskDto));
         Assert.Equal(ErrorMessageConstants.CategoryDoesNotExist, exception.Message);
 
-        _categoryRepositoryMock.VerifyCallForCategoryExists();
+        _categoryCheckerMock.VerifyCategoryExistsCall();
     }
 
     [Fact]
@@ -117,7 +117,7 @@ public sealed class TasksServiceTests : IClassFixture<TestDatabaseFixture>, IAsy
             CategoryId = _targetCategoryId
         };
 
-        _categoryRepositoryMock.Setup(c => c.CategoryExistsAsync(taskDto.CategoryId))
+        _categoryCheckerMock.Setup(c => c.CategoryExistsAsync(taskDto.CategoryId))
             .ReturnsAsync(true);
 
         // Act
@@ -225,7 +225,7 @@ public sealed class TasksServiceTests : IClassFixture<TestDatabaseFixture>, IAsy
             CategoryId = _targetCategoryId
         };
 
-        _categoryRepositoryMock.Setup(c => c.CategoryExistsAsync(taskDto.CategoryId))
+        _categoryCheckerMock.Setup(c => c.CategoryExistsAsync(taskDto.CategoryId))
             .ReturnsAsync(true);
 
         // Act
@@ -244,7 +244,7 @@ public sealed class TasksServiceTests : IClassFixture<TestDatabaseFixture>, IAsy
         Assert.NotNull(updatedTask);
         Assert.Equivalent(expectedTask, updatedTask);
 
-        _categoryRepositoryMock.VerifyCallForCategoryExists();
+        _categoryCheckerMock.VerifyCategoryExistsCall();
     }
 
     [Fact]
@@ -327,14 +327,14 @@ public sealed class TasksServiceTests : IClassFixture<TestDatabaseFixture>, IAsy
             CategoryId = 1000
         };
 
-        _categoryRepositoryMock.Setup(c => c.CategoryExistsAsync(taskDto.CategoryId))
+        _categoryCheckerMock.Setup(c => c.CategoryExistsAsync(taskDto.CategoryId))
             .ReturnsAsync(false);
 
         // Act & Assert
         var exception = await Assert.ThrowsAsync<BadHttpRequestException>(() => _tasksService.UpdateTaskAsync(targetTask.Id, taskDto));
         Assert.Equal(ErrorMessageConstants.CategoryDoesNotExist, exception.Message);
 
-        _categoryRepositoryMock.VerifyCallForCategoryExists();
+        _categoryCheckerMock.VerifyCategoryExistsCall();
     }
 
     [Fact]
@@ -350,7 +350,7 @@ public sealed class TasksServiceTests : IClassFixture<TestDatabaseFixture>, IAsy
             CategoryId = targetTask.CategoryId
         };
 
-        _categoryRepositoryMock.Setup(c => c.CategoryExistsAsync(taskDto.CategoryId))
+        _categoryCheckerMock.Setup(c => c.CategoryExistsAsync(taskDto.CategoryId))
             .ReturnsAsync(true);
 
         // Act
@@ -377,7 +377,7 @@ public sealed class TasksServiceTests : IClassFixture<TestDatabaseFixture>, IAsy
             CategoryId = targetTask.CategoryId
         };
 
-        _categoryRepositoryMock.Setup(c => c.CategoryExistsAsync(taskDto.CategoryId))
+        _categoryCheckerMock.Setup(c => c.CategoryExistsAsync(taskDto.CategoryId))
             .ReturnsAsync(true);
 
         // Act
@@ -461,23 +461,17 @@ public sealed class TasksServiceTests : IClassFixture<TestDatabaseFixture>, IAsy
         var tasks = await _dataGenerator.InsertTasksAsync(count: 2, _targetCategoryId, tasksPriority: Priority.Low, tasksStatus: Status.InProgress);
         var targetTask = tasks[0];
 
-        var strategyMock = new Mock<ITaskDeleteStategy>();
-
-        _taskDeleteFactory.Setup(x => x.GetDeleteStrategy(targetTask.Priority))
-            .Returns(strategyMock.Object);
-
-        var expectedDeleteAction = DeleteAction.Removed;
-        strategyMock.Setup(x => x.DeleteAsync(targetTask, _dbContext))
-            .ReturnsAsync(expectedDeleteAction);
+        var deleteAction = DeleteAction.Removed;
+        _taskDeleteOrchestrator.Setup(x => x.ExecuteDeletionAsync(It.IsAny<TaskEntity>(), It.IsAny<TaskManagementSystemDbContext>()))
+            .ReturnsAsync(deleteAction);
 
         // Act
         var result = await _tasksService.DeleteTaskAsync(targetTask.Id);
 
         // Assert
-        Assert.Equal(expectedDeleteAction, result);
+        Assert.Equal(deleteAction, result);
 
-        _taskDeleteFactory.VerifyTaskCallForGetDeleteStrategy();
-        strategyMock.VerifyTaskStrategyCallForDelete();
+        _taskDeleteOrchestrator.Verify(c => c.ExecuteDeletionAsync(It.IsAny<TaskEntity>(), It.IsAny<TaskManagementSystemDbContext>()), Times.Once);
     }
 
     [Fact]
