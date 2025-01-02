@@ -3,19 +3,20 @@ using TaskManagementSystem.Database;
 using TaskManagementSystem.Database.Models;
 using TaskManagementSystem.DTOs.Request;
 using TaskManagementSystem.Enums;
+using TaskManagementSystem.Interfaces;
 using TaskManagementSystem.Services;
 using TaskManagementSystem.Tests.Fixtures;
 using TaskManagementSystem.Tests.TestUtilities;
 
-namespace TaskManagementSystem.Tests.IntegrationTests;
+namespace TaskManagementSystem.Tests.IntegrationTests.Services;
 
 public sealed class ReportsServiceTests : IClassFixture<TestDatabaseFixture>, IAsyncLifetime
 {
     private readonly TaskManagementSystemDbContext _dbContext;
     private readonly TestDataManager _dataGenerator;
-    private readonly ReportsService _reportsService;
+    private readonly IReportsService _reportsService;
 
-    private List<CategoryEntity> categories = new();
+    private List<CategoryEntity> _categories = new();
 
     public ReportsServiceTests(TestDatabaseFixture fixture)
     {
@@ -27,7 +28,7 @@ public sealed class ReportsServiceTests : IClassFixture<TestDatabaseFixture>, IA
 
     public async Task InitializeAsync()
     {
-        categories = await _dataGenerator.InsertCategories(count: 2);
+        _categories = await _dataGenerator.InsertCategoriesAsync(count: 2);
     }
 
     public async Task DisposeAsync()
@@ -41,11 +42,11 @@ public sealed class ReportsServiceTests : IClassFixture<TestDatabaseFixture>, IA
     public async Task GetReportForTasksAsync_AllFiltersProvided_ReturnsFilteredTasksGroupedByCategory()
     {
         // Arrange
-        var notMatchingTask1 = await _dataGenerator.InsertTasks(count: 1, categories[0].Id, tasksPriority: Priority.Medium, tasksStatus: Status.InProgress);
-        var notMatchingTask2 = await _dataGenerator.InsertTasks(count: 1, categories[0].Id, tasksPriority: Priority.Low, tasksStatus: Status.Pending);
+        var notMatchingTask1 = await _dataGenerator.InsertTasksAsync(count: 1, _categories[0].Id, tasksPriority: Priority.Medium, tasksStatus: Status.InProgress);
+        var notMatchingTask2 = await _dataGenerator.InsertTasksAsync(count: 1, _categories[0].Id, tasksPriority: Priority.Low, tasksStatus: Status.Pending);
 
-        var targetTasks1 = await _dataGenerator.InsertTasks(count: 4, categories[0].Id, tasksPriority: Priority.Low, tasksStatus: Status.InProgress);
-        var targetTasks2 = await _dataGenerator.InsertTasks(count: 4, categories[1].Id, tasksPriority: Priority.Low, tasksStatus: Status.InProgress);
+        var targetTasks1 = await _dataGenerator.InsertTasksAsync(count: 4, _categories[0].Id, tasksPriority: Priority.High, tasksStatus: Status.Locked);
+        var targetTasks2 = await _dataGenerator.InsertTasksAsync(count: 4, _categories[1].Id, tasksPriority: Priority.High, tasksStatus: Status.Locked);
 
         var filtersDto = new ReportTasksRequestDto
         {
@@ -63,13 +64,13 @@ public sealed class ReportsServiceTests : IClassFixture<TestDatabaseFixture>, IA
             .Concat(notMatchingTask2)
             .Concat(targetTasks1)
             .Concat(targetTasks2)
-            .Where(x => x.Status == filtersDto.Status 
-                && x.Priority == filtersDto.Priority 
-                && x.DueDate > filtersDto.DueAfter 
+            .Where(x => x.Status == filtersDto.Status
+                && x.Priority == filtersDto.Priority
+                && x.DueDate > filtersDto.DueAfter
                 && x.DueDate < filtersDto.DueBefore)
             .ToList();
 
-        var expectedTasksReport = TestResultBuilder.GetExpectedReport(categories, filteredTasks);
+        var expectedTasksReport = TestResultBuilder.GetExpectedReport(_categories, filteredTasks);
         Assert.Equivalent(expectedTasksReport, tasksReport);
     }
 
@@ -77,10 +78,10 @@ public sealed class ReportsServiceTests : IClassFixture<TestDatabaseFixture>, IA
     public async Task GetReportForTasksAsync_FiltersNotProvided_ReturnsAllTasksGroupedByCategory()
     {
         // Arrange
-        var targetTasks1 = await _dataGenerator.InsertTasks(count: 1, categories[0].Id, tasksPriority: Priority.Medium, tasksStatus: Status.InProgress);
-
-        var targetTasks2 = await _dataGenerator.InsertTasks(count: 4, categories[0].Id, tasksPriority: Priority.Low, tasksStatus: Status.InProgress);
-        var targetTasks3 = await _dataGenerator.InsertTasks(count: 4, categories[1].Id, tasksPriority: Priority.Low, tasksStatus: Status.Completed);
+        var targetTasks1 = await _dataGenerator.InsertTasksAsync(count: 1, _categories[0].Id, tasksPriority: Priority.Medium, tasksStatus: Status.InProgress);
+        var targetTasks2 = await _dataGenerator.InsertTasksAsync(count: 2, _categories[0].Id, tasksPriority: Priority.Low, tasksStatus: Status.InProgress);
+        var targetTasks3 = await _dataGenerator.InsertTasksAsync(count: 2, _categories[1].Id, tasksPriority: Priority.Low, tasksStatus: Status.Completed);
+        var targetTasks4 = await _dataGenerator.InsertTasksAsync(count: 1, _categories[1].Id, tasksPriority: Priority.High, tasksStatus: Status.Locked);
 
         // Act
         var tasksReport = await _reportsService.GetReportForTasksAsync(new ReportTasksRequestDto());
@@ -89,9 +90,10 @@ public sealed class ReportsServiceTests : IClassFixture<TestDatabaseFixture>, IA
         var allTasks = targetTasks1
             .Concat(targetTasks2)
             .Concat(targetTasks3)
+            .Concat(targetTasks4)
             .ToList();
 
-        var expectedTasksReport = TestResultBuilder.GetExpectedReport(categories, allTasks);
+        var expectedTasksReport = TestResultBuilder.GetExpectedReport(_categories, allTasks);
         Assert.Equivalent(expectedTasksReport, tasksReport);
     }
 

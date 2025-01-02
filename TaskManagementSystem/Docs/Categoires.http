@@ -1,0 +1,4 @@
+﻿@TaskManagmentSystem_HostAddress = https://localhost:7282
+
+GET {{TaskManagmentSystem_HostAddress}}/api/categories/
+Accept: application/json

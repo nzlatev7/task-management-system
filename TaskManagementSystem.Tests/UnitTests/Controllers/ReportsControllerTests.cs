@@ -6,7 +6,7 @@ using TaskManagementSystem.DTOs.Response;
 using TaskManagementSystem.Enums;
 using TaskManagementSystem.Interfaces;
 
-namespace TaskManagementSystem.Tests.UnitTests;
+namespace TaskManagementSystem.Tests.UnitTests.Controllers;
 
 public sealed class ReportsControllerTests
 {

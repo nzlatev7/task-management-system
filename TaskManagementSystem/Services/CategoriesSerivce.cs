@@ -1,11 +1,11 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using TaskManagementSystem.Constants;
 using TaskManagementSystem.Database;
-using TaskManagementSystem.Database.Models;
 using TaskManagementSystem.DTOs.Request;
 using TaskManagementSystem.DTOs.Response;
 using TaskManagementSystem.Enums;
 using TaskManagementSystem.Exceptions;
+using TaskManagementSystem.Extensions;
 using TaskManagementSystem.Helpers;
 using TaskManagementSystem.Interfaces;
 
@@ -14,19 +14,19 @@ namespace TaskManagementSystem.Services;
 public sealed class CategoriesSerivce : ICategoriesService
 {
     private readonly TaskManagementSystemDbContext _dbContext;
+    private readonly ICategoryChecker _categoryChecker;
 
-    public CategoriesSerivce(TaskManagementSystemDbContext dbContext)
+    public CategoriesSerivce(
+        TaskManagementSystemDbContext dbContext,
+        ICategoryChecker categoryChecker)
     {
         _dbContext = dbContext;
+        _categoryChecker = categoryChecker;
     }
 
     public async Task<CategoryResponseDto> CreateCategoryAsync(CategoryRequestDto categoryDto)
     {
-        var category = new CategoryEntity()
-        {
-            Name = categoryDto.Name,
-            Description = categoryDto.Description
-        };
+        var category = categoryDto.ToCategoryEntityForCreate();
 
         await _dbContext.Categories.AddAsync(category);
         await _dbContext.SaveChangesAsync();
@@ -37,30 +37,30 @@ public sealed class CategoriesSerivce : ICategoriesService
     public async Task<IEnumerable<CategoryResponseDto>> GetAllCategoriesAsync()
     {
         var categories = await _dbContext.Categories
-            .ToOutDtos();
+            .Select(x => new CategoryResponseDto
+            {
+                Id = x.Id,
+                Name = x.Name,
+                Description = x.Description
+            }).ToListAsync();
 
         return categories;
     }
 
     public async Task<CategoryResponseDto> GetCategoryByIdAsync(int categoryId)
     {
-        var category = await _dbContext.Categories.FindAsync(categoryId);
-
-        if (category is null)
-            throw new NotFoundException(ErrorMessageConstants.CategoryDoesNotExist);
+        var category = await _dbContext.Categories.FindAsync(categoryId)
+            ?? throw new NotFoundException(ErrorMessageConstants.CategoryDoesNotExist);
 
         return category.ToOutDto();
     }
 
     public async Task<CategoryResponseDto> UpdateCategoryAsync(int categoryId, CategoryRequestDto categoryDto)
     {
-        var category = await _dbContext.Categories.FindAsync(categoryId);
+        var category = await _dbContext.Categories.FindAsync(categoryId)
+            ?? throw new NotFoundException(ErrorMessageConstants.CategoryDoesNotExist);
 
-        if (category is null)
-            throw new NotFoundException(ErrorMessageConstants.CategoryDoesNotExist);
-
-        category.Name = categoryDto.Name;
-        category.Description = categoryDto.Description;
+        categoryDto.UpdateCategoryEntity(category);
 
         await _dbContext.SaveChangesAsync();
 
@@ -85,20 +85,30 @@ public sealed class CategoriesSerivce : ICategoriesService
 
     public async Task<IEnumerable<TaskResponseDto>> GetTasksByCategoryAsync(int categoryId)
     {
-        await ValidateCategory(categoryId);
+        await ValidateCategoryAsync(categoryId);
 
         var tasks = await _dbContext.Tasks
             .Where(x => x.CategoryId == categoryId)
-            .ToOutDtos();
+            .Select(x => new TaskResponseDto
+            {
+                Id = x.Id,
+                Title = x.Title,
+                Description = x.Description,
+                DueDate = x.DueDate,
+                Priority = x.Priority,
+                IsCompleted = x.IsCompleted,
+                Status = x.Status,
+                CategoryId = x.CategoryId
+            }).ToListAsync();
 
         return tasks;
     }
 
-    public async Task<CategoryCompletionStatusResponseDto> GetCompletionStatusForCategoryAwait(int categoryId)
+    public async Task<CategoryCompletionStatusResponseDto> GetCompletionStatusForCategoryAsync(int categoryId)
     {
-        await ValidateCategory(categoryId);
+        await ValidateCategoryAsync(categoryId);
 
-        var statusStatistics = await GetTaskStatusStatatisticsForCategory(categoryId);
+        var statusStatistics = await GetTaskStatusStatatisticsForCategoryAsync(categoryId);
 
         var completionPercentage = CalculateCompletionPercentage(statusStatistics);
             
@@ -115,30 +125,31 @@ public sealed class CategoriesSerivce : ICategoriesService
         return result;
     }
 
-    public async Task<bool> CategoryExistsAsync(int categoryId)
+    private async Task ValidateCategoryAsync(int categoryId)
     {
-        return await _dbContext.Categories.AnyAsync(c => c.Id == categoryId);
-    }
-
-    private async Task ValidateCategory(int categoryId)
-    {
-        var exist = await CategoryExistsAsync(categoryId);
+        var exist = await _categoryChecker.CategoryExistsAsync(categoryId);
         if (exist is false)
             throw new NotFoundException(ErrorMessageConstants.CategoryDoesNotExist);
     }
 
     private short CalculateCompletionPercentage(StatusStatisticsDto statusStatistics)
     {
+        short completionPercentage;
+
         var validTasksCount = statusStatistics.NumberOfPendingTasks + statusStatistics.NumberOfInProgressTasks + statusStatistics.NumberOfCompletedTasks;
         if (validTasksCount == 0)
-            throw new ConflictException(ErrorMessageConstants.CategoryWithoutTasks);
-
-        short completionPercentage = (short)((statusStatistics.NumberOfCompletedTasks / (double)validTasksCount) * 100);
+        {
+            completionPercentage = 0; // as there's nothing to measure progress against, so completion percentage is 0%
+        }
+        else
+        {
+            completionPercentage = (short)((statusStatistics.NumberOfCompletedTasks / (double)validTasksCount) * 100);
+        }
 
         return completionPercentage;
     }
 
-    private async Task<StatusStatisticsDto> GetTaskStatusStatatisticsForCategory(int categoryId)
+    private async Task<StatusStatisticsDto> GetTaskStatusStatatisticsForCategoryAsync(int categoryId)
     {
         var taskStatusToCountForCategory = await _dbContext.Tasks
             .Where(t => t.CategoryId == categoryId)
@@ -151,7 +162,8 @@ public sealed class CategoriesSerivce : ICategoriesService
             NumberOfPendingTasks = taskStatusToCountForCategory.GetValueOrDefault(Status.Pending, 0),
             NumberOfInProgressTasks = taskStatusToCountForCategory.GetValueOrDefault(Status.InProgress, 0),
             NumberOfCompletedTasks = taskStatusToCountForCategory.GetValueOrDefault(Status.Completed, 0),
-            NumberOfArchivedTasks = taskStatusToCountForCategory.GetValueOrDefault(Status.Archived, 0)
+            NumberOfArchivedTasks = taskStatusToCountForCategory.GetValueOrDefault(Status.Archived, 0),
+            NumberOfLockedTasks = taskStatusToCountForCategory.GetValueOrDefault(Status.Locked, 0)
         };
 
         return result;

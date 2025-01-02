@@ -23,7 +23,7 @@ public sealed class UpdateTaskRequestDto
     [JsonConverter(typeof(JsonStringEnumConverter))]
     public Priority? Priority { get; set; }
 
-    [Range(1, 3, ErrorMessage = ErrorMessageConstants.TaskStatusMustRepresentValidValues)]
+    [Range(0, 3, ErrorMessage = ErrorMessageConstants.UpdateTaskStatusMustRepresentValidValues)]
     [JsonConverter(typeof(JsonStringEnumConverter))]
     public Status Status { get; set; }
 

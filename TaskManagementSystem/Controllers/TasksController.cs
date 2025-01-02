@@ -27,9 +27,9 @@ public class TasksController : ControllerBase
 
     [HttpGet]
     [Route(RouteConstants.Tasks)]
-    public async Task<ActionResult<IEnumerable<TaskResponseDto>>> GetAllTasks([FromQuery] bool sortByPriorityAscending)
+    public async Task<ActionResult<IEnumerable<TaskResponseDto>>> GetAllTasks([FromQuery] GetAllTasksRequestDto sortBy)
     {
-        var result = await _tasksService.GetAllTasksAsync(sortByPriorityAscending);
+        var result = await _tasksService.GetAllTasksAsync(sortBy);
 
         return Ok(result);
     }
@@ -52,12 +52,21 @@ public class TasksController : ControllerBase
         return Ok(result);
     }
 
+    [HttpPatch]
+    [Route(RouteConstants.TaskById)]
+    public async Task<ActionResult> UnlockTask([FromRoute] int id, [FromBody] UnlockTaskRequestDto unlockDto)
+    {
+        await _tasksService.UnlockTaskAsync(id, unlockDto);
+        
+        return NoContent();
+    }
+
     [HttpDelete]
     [Route(RouteConstants.TaskById)]
     public async Task<ActionResult> DeleteTask([FromRoute] int id)
     {
-        await _tasksService.DeleteTaskAsync(id);
+        var deleteAction = await _tasksService.DeleteTaskAsync(id);
 
-        return Ok();
+        return Ok(deleteAction);
     }
 }

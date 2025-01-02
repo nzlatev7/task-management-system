@@ -54,6 +54,48 @@ namespace TaskManagementSystem.Migrations
                     b.ToTable("category");
                 });
 
+            modelBuilder.Entity("TaskManagementSystem.Database.Models.DeletedTaskEntity", b =>
+                {
+                    b.Property<int>("TaskId")
+                        .HasColumnType("integer")
+                        .HasColumnName("task_id");
+
+                    b.Property<int?>("CategoryId")
+                        .HasColumnType("integer")
+                        .HasColumnName("category_id");
+
+                    b.Property<string>("Description")
+                        .HasMaxLength(160)
+                        .HasColumnType("character varying(160)")
+                        .HasColumnName("description");
+
+                    b.Property<DateTime>("DueDate")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("due_date");
+
+                    b.Property<short>("Priority")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("smallint")
+                        .HasDefaultValue((short)1)
+                        .HasColumnName("priority");
+
+                    b.Property<short>("Status")
+                        .HasColumnType("smallint")
+                        .HasColumnName("status");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasMaxLength(60)
+                        .HasColumnType("character varying(60)")
+                        .HasColumnName("title");
+
+                    b.HasKey("TaskId");
+
+                    b.HasIndex("CategoryId");
+
+                    b.ToTable("deleted_task");
+                });
+
             modelBuilder.Entity("TaskManagementSystem.Database.Models.TaskEntity", b =>
                 {
                     b.Property<int>("Id")
@@ -102,7 +144,20 @@ namespace TaskManagementSystem.Migrations
 
                     b.HasIndex("CategoryId");
 
+                    b.HasIndex("Status")
+                        .HasDatabaseName("IX_task_status");
+
                     b.ToTable("task");
+                });
+
+            modelBuilder.Entity("TaskManagementSystem.Database.Models.DeletedTaskEntity", b =>
+                {
+                    b.HasOne("TaskManagementSystem.Database.Models.CategoryEntity", "Category")
+                        .WithMany()
+                        .HasForeignKey("CategoryId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.Navigation("Category");
                 });
 
             modelBuilder.Entity("TaskManagementSystem.Database.Models.TaskEntity", b =>

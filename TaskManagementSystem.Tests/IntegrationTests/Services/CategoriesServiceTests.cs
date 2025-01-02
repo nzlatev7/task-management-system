@@ -1,4 +1,5 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using Moq;
 using TaskManagementSystem.Constants;
 using TaskManagementSystem.Database;
 using TaskManagementSystem.Database.Models;
@@ -6,31 +7,35 @@ using TaskManagementSystem.DTOs.Request;
 using TaskManagementSystem.DTOs.Response;
 using TaskManagementSystem.Enums;
 using TaskManagementSystem.Exceptions;
+using TaskManagementSystem.Interfaces;
 using TaskManagementSystem.Services;
 using TaskManagementSystem.Tests.Fixtures;
 using TaskManagementSystem.Tests.TestUtilities;
 
-namespace TaskManagementSystem.Tests.IntegrationTests;
+namespace TaskManagementSystem.Tests.IntegrationTests.Services;
 
 public sealed class CategoriesServiceTests : IClassFixture<TestDatabaseFixture>, IAsyncLifetime
 {
     private readonly TaskManagementSystemDbContext _dbContext;
     private readonly TestDataManager _dataGenerator;
-    private readonly CategoriesSerivce _categoriesService;
+    private readonly Mock<ICategoryChecker> _categoryCheckerMock;
 
-    private List<CategoryEntity> categories = new();
+    private readonly ICategoriesService _categoriesService;
+
+    private List<CategoryEntity> _categories = new();
 
     public CategoriesServiceTests(TestDatabaseFixture fixture)
     {
         _dbContext = fixture.DbContext;
         _dataGenerator = new TestDataManager(_dbContext);
+        _categoryCheckerMock = new Mock<ICategoryChecker>();
 
-        _categoriesService = new CategoriesSerivce(_dbContext);
+        _categoriesService = new CategoriesSerivce(_dbContext, _categoryCheckerMock.Object);
     }
 
     public async Task InitializeAsync()
     {
-        categories = await _dataGenerator.InsertCategories(2);
+        _categories = await _dataGenerator.InsertCategoriesAsync(2);
     }
 
     public async Task DisposeAsync()
@@ -76,7 +81,7 @@ public sealed class CategoriesServiceTests : IClassFixture<TestDatabaseFixture>,
         var resultCategories = await _categoriesService.GetAllCategoriesAsync();
 
         // Assert
-        var expectedResultCategories = TestResultBuilder.GetExpectedCategories(categories);
+        var expectedResultCategories = TestResultBuilder.GetExpectedCategories(_categories);
         Assert.Equivalent(expectedResultCategories, resultCategories, strict: true);
     }
 
@@ -88,7 +93,7 @@ public sealed class CategoriesServiceTests : IClassFixture<TestDatabaseFixture>,
     public async Task GetCategoryByIdAsync_ReturnsExpectedCategory()
     {
         // Arrange
-        var targetCategory = categories[0];
+        var targetCategory = _categories[0];
 
         // Act
         var resultCategory = await _categoriesService.GetCategoryByIdAsync(targetCategory.Id);
@@ -115,7 +120,7 @@ public sealed class CategoriesServiceTests : IClassFixture<TestDatabaseFixture>,
     public async Task UdateCategoryAsync_CategoryExists_ReturnsUpdatedCategory()
     {
         // Arrange
-        var targetCategory = categories[0];
+        var targetCategory = _categories[0];
 
         var categoryDto = new CategoryRequestDto
         {
@@ -160,14 +165,14 @@ public sealed class CategoriesServiceTests : IClassFixture<TestDatabaseFixture>,
     public async Task DeleteCategoryAsync_CategoryExists_CategoryDeleted()
     {
         // Arrange
-        var targetCategoryId = categories[0].Id;
+        var targetCategoryId = _categories[0].Id;
 
         // Act
         await _categoriesService.DeleteCategoryAsync(targetCategoryId);
 
         // Assert            
         var count = await _dbContext.Categories.CountAsync();
-        Assert.Equal(categories.Count - 1, count);
+        Assert.Equal(_categories.Count - 1, count);
 
         var deletedCategory = await _dbContext.Categories
             .FirstOrDefaultAsync(x => x.Id == targetCategoryId);
@@ -176,11 +181,23 @@ public sealed class CategoriesServiceTests : IClassFixture<TestDatabaseFixture>,
     }
 
     [Fact]
-    public async Task DeleteCategoryAsync_CategoryDoesNotExist_ReturnsFalse()
+    public async Task DeleteCategoryAsync_CategoryDoesNotExist_ThrowsNotFoundException()
     {
         // Act & Assert
         var exception = await Assert.ThrowsAsync<NotFoundException>(() => _categoriesService.DeleteCategoryAsync(categoryId: 1000));
         Assert.Equal(ErrorMessageConstants.CategoryDoesNotExist, exception.Message);
+    }
+
+    [Fact]
+    public async Task DeleteCategoryAsync_AssociatedTasksToCategory_ThrowsConflictException()
+    {
+        // Arrange
+        var targetCategoryId = _categories[0].Id;
+        await _dataGenerator.InsertTasksAsync(count: 1, targetCategoryId);
+
+        // Act & Assert
+        var exception = await Assert.ThrowsAsync<ConflictException>(() => _categoriesService.DeleteCategoryAsync(targetCategoryId));
+        Assert.Equal(ErrorMessageConstants.AssociatedTasksToCategory, exception.Message);
     }
 
     #endregion
@@ -188,13 +205,16 @@ public sealed class CategoriesServiceTests : IClassFixture<TestDatabaseFixture>,
     #region GetTasksByCategory
 
     [Fact]
-    public async Task GetTasksByCategoryAsync_ReturnsTasksForThisCategory()
+    public async Task GetTasksByCategoryAsync_CategoryExists_ReturnsTasksForThisCategory()
     {
         // Arrange
-        var targetCategoryId = categories[0].Id;
+        var targetCategoryId = _categories[0].Id;
 
-        var targetTasks = await _dataGenerator.InsertTasks(count: 2, targetCategoryId);
-        await _dataGenerator.InsertTasks(count: 2, categoryId: categories[1].Id);
+        var targetTasks = await _dataGenerator.InsertTasksAsync(count: 2, targetCategoryId);
+        await _dataGenerator.InsertTasksAsync(count: 2, categoryId: _categories[1].Id);
+
+        _categoryCheckerMock.Setup(x => x.CategoryExistsAsync(targetCategoryId))
+            .ReturnsAsync(true);
 
         // Act
         var resultTasks = await _categoriesService.GetTasksByCategoryAsync(targetCategoryId);
@@ -202,14 +222,24 @@ public sealed class CategoriesServiceTests : IClassFixture<TestDatabaseFixture>,
         // Assert
         var expectedResultTasks = TestResultBuilder.GetExpectedTasks(targetTasks);
         Assert.Equivalent(expectedResultTasks, resultTasks, strict: true);
+
+        _categoryCheckerMock.VerifyCategoryExistsCall();
     }
 
     [Fact]
     public async Task GetTasksByCategoryAsync_CategoryDoesNotExist_ThrowsNotFoundException()
     {
+        // Arrange
+        var categoryId = 1000;
+
+        _categoryCheckerMock.Setup(x => x.CategoryExistsAsync(categoryId))
+            .ReturnsAsync(false);
+
         // Act & Assert
-        var exception = await Assert.ThrowsAsync<NotFoundException>(() => _categoriesService.GetTasksByCategoryAsync(categoryId: 1000));
+        var exception = await Assert.ThrowsAsync<NotFoundException>(() => _categoriesService.GetTasksByCategoryAsync(categoryId));
         Assert.Equal(ErrorMessageConstants.CategoryDoesNotExist, exception.Message);
+
+        _categoryCheckerMock.VerifyCategoryExistsCall();
     }
 
     #endregion
@@ -217,18 +247,22 @@ public sealed class CategoriesServiceTests : IClassFixture<TestDatabaseFixture>,
     #region GetCompletionStatusForCategory
 
     [Fact]
-    public async Task GetCompletionStatusForCategoryAwait_CategoryExists_ReturnsCategoryCompletionStatus()
+    public async Task GetCompletionStatusForCategoryAsync_CategoryExists_ReturnsCategoryCompletionStatus()
     {
         // Arrange
-        var targetCategoryId = categories[0].Id;
+        var targetCategoryId = _categories[0].Id;
 
-        var targetCompletedTasks = await _dataGenerator.InsertTasks(count: 2, targetCategoryId, tasksStatus: Status.Completed);
-        var targetInProgressTasks = await _dataGenerator.InsertTasks(count: 1, targetCategoryId, tasksStatus: Status.InProgress);
+        var targetCompletedTasks = await _dataGenerator.InsertTasksAsync(count: 2, targetCategoryId, tasksStatus: Status.Completed);
+        var targetInProgressTasks = await _dataGenerator.InsertTasksAsync(count: 1, targetCategoryId, tasksStatus: Status.InProgress);
+        var targetLockedTasks = await _dataGenerator.InsertTasksAsync(count: 1, targetCategoryId, tasksStatus: Status.Locked);
 
-        await _dataGenerator.InsertTasks(count: 2, categoryId: categories[1].Id);
+        await _dataGenerator.InsertTasksAsync(count: 2, categoryId: _categories[1].Id);
+
+        _categoryCheckerMock.Setup(x => x.CategoryExistsAsync(targetCategoryId))
+            .ReturnsAsync(true);
 
         // Act
-        var resultCompletionStatus = await _categoriesService.GetCompletionStatusForCategoryAwait(targetCategoryId);
+        var resultCompletionStatus = await _categoriesService.GetCompletionStatusForCategoryAsync(targetCategoryId);
 
         // Assert
         short expectedCompletionStatus = (short)(targetCompletedTasks.Count / (double)(targetInProgressTasks.Count + targetCompletedTasks.Count) * 100);
@@ -240,6 +274,7 @@ public sealed class CategoriesServiceTests : IClassFixture<TestDatabaseFixture>,
             NumberOfInProgressTasks = targetInProgressTasks.Count,
             NumberOfCompletedTasks = targetCompletedTasks.Count,
             NumberOfArchivedTasks = 0,
+            NumberOfLockedTasks = targetLockedTasks.Count
         };
 
         Assert.Equivalent(expectedStatusStatistics, resultCompletionStatus.CompletionStatusStats, strict: true);
@@ -250,38 +285,58 @@ public sealed class CategoriesServiceTests : IClassFixture<TestDatabaseFixture>,
             .FirstOrDefaultAsync();
 
         Assert.Equal(expectedCompletionStatus, updatedCompletionPercentage);
+
+        _categoryCheckerMock.VerifyCategoryExistsCall();
     }
 
     [Fact]
-    public async Task GetCompletionStatusForCategoryAwait_CategoryDoesNotExist_ThrowsNotFoundException()
+    public async Task GetCompletionStatusForCategoryAsync_CategoryDoesNotExist_ThrowsNotFoundException()
     {
+        // Arrange
+        var categoryId = 1000;
+
+        _categoryCheckerMock.Setup(x => x.CategoryExistsAsync(categoryId))
+            .ReturnsAsync(false);
+
         // Act & Assert
-        var exception = await Assert.ThrowsAsync<NotFoundException>(() => _categoriesService.GetCompletionStatusForCategoryAwait(categoryId: 1000));
+        var exception = await Assert.ThrowsAsync<NotFoundException>(() => _categoriesService.GetCompletionStatusForCategoryAsync(categoryId));
         Assert.Equal(ErrorMessageConstants.CategoryDoesNotExist, exception.Message);
-    }
 
-    #endregion
-
-    #region CategoryExists
-
-    [Fact]
-    public async Task CategoryExistsAsync_CategoryExists_ReturnsTrue()
-    {
-        // Act
-        var result = await _categoriesService.CategoryExistsAsync(categories[0].Id);
-
-        // Assert            
-        Assert.True(result);
+        _categoryCheckerMock.VerifyCategoryExistsCall();
     }
 
     [Fact]
-    public async Task CategoryExistsAsync_CategoryDoesNotExist_ReturnsFalse()
+    public async Task GetCompletionStatusForCategoryAsync_NoTasksForCategory_ReturnsCategoryCompletionStatus_WithZeroStatatistics()
     {
-        // Act
-        var result = await _categoriesService.CategoryExistsAsync(categoryId: 1000);
+        var targetCategoryId = _categories[0].Id;
 
-        // Assert            
-        Assert.False(result);
+        _categoryCheckerMock.Setup(x => x.CategoryExistsAsync(targetCategoryId))
+            .ReturnsAsync(true);
+
+        // Act
+        var resultCompletionStatus = await _categoriesService.GetCompletionStatusForCategoryAsync(targetCategoryId);
+
+        // Assert
+        short expectedCompletionStatus = 0;
+        Assert.Equal(expectedCompletionStatus, resultCompletionStatus.CompletionPercentage);
+
+        var expectedStatusStatistics = new StatusStatisticsDto()
+        {
+            NumberOfPendingTasks = 0,
+            NumberOfInProgressTasks = 0,
+            NumberOfCompletedTasks = 0,
+            NumberOfArchivedTasks = 0,
+            NumberOfLockedTasks = 0,
+        };
+
+        Assert.Equivalent(expectedStatusStatistics, resultCompletionStatus.CompletionStatusStats, strict: true);
+
+        var updatedCompletionPercentage = await _dbContext.Categories
+            .Where(x => x.Id == targetCategoryId)
+            .Select(x => x.CompletionPercentage)
+            .FirstOrDefaultAsync();
+
+        Assert.Equal(expectedCompletionStatus, updatedCompletionPercentage);
     }
 
     #endregion

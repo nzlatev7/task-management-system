@@ -1,0 +1,21 @@
+@TaskManagmentSystem_HostAddress = https://localhost:7282
+
+GET {{TaskManagmentSystem_HostAddress}}/api/tasks/
+Accept: application/json
+
+###
+
+POST {{TaskManagmentSystem_HostAddress}}/api/tasks/
+Content-Type: application/json
+
+{
+    "title": "New Tasl",
+    "description": "…",
+    "dueDate": "2024-12-30T16:41:36.707Z",
+    "priority": "Medium",
+    "categoryId": 1
+}
+
+###
+
+DELETE {{TaskManagmentSystem_HostAddress}}/api/tasks/7

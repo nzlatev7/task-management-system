@@ -5,7 +5,7 @@ using TaskManagementSystem.DTOs.Request;
 using TaskManagementSystem.DTOs.Response;
 using TaskManagementSystem.Interfaces;
 
-namespace TaskManagementSystem.Tests.UnitTests;
+namespace TaskManagementSystem.Tests.UnitTests.Controllers;
 
 public sealed class CategoriesContollerTests
 {
@@ -45,6 +45,7 @@ public sealed class CategoriesContollerTests
         // Assert
         var okResult = Assert.IsType<OkObjectResult>(result.Result);
         Assert.Equal(expectedCategory, okResult.Value);
+
         _categoriesServiceMock.Verify(service => service.CreateCategoryAsync(categoryForCreate), Times.Once);
     }
 
@@ -71,6 +72,7 @@ public sealed class CategoriesContollerTests
         // Assert
         var okResult = Assert.IsType<OkObjectResult>(result.Result);
         Assert.Equal(expectedResponse, okResult.Value);
+
         _categoriesServiceMock.Verify(service => service.GetAllCategoriesAsync(), Times.Once);
     }
 
@@ -99,6 +101,7 @@ public sealed class CategoriesContollerTests
         // Assert
         var okResult = Assert.IsType<OkObjectResult>(result.Result);
         Assert.Equal(expectedCategory, okResult.Value);
+
         _categoriesServiceMock.Verify(service => service.GetCategoryByIdAsync(categoryId), Times.Once);
     }
 
@@ -131,6 +134,7 @@ public sealed class CategoriesContollerTests
         // Assert
         var okResult = Assert.IsType<OkObjectResult>(result.Result);
         Assert.Equal(expectedCategory, okResult.Value);
+
         _categoriesServiceMock.Verify(service => service.UpdateCategoryAsync(categoryId, categoryForUpdate), Times.Once);
     }
 
@@ -149,6 +153,7 @@ public sealed class CategoriesContollerTests
 
         // Assert
         var okResult = Assert.IsType<OkResult>(result);
+
         _categoriesServiceMock.Verify(service => service.DeleteCategoryAsync(categoryId), Times.Once);
     }
 
@@ -177,7 +182,43 @@ public sealed class CategoriesContollerTests
         // Assert
         var okObjectResult = Assert.IsType<OkObjectResult>(result.Result);
         Assert.Equal(expectedResponse, okObjectResult.Value);
+
         _categoriesServiceMock.Verify(service => service.GetTasksByCategoryAsync(categoryId), Times.Once);
+    }
+
+    #endregion
+
+    #region GetCompletionStatusForCategory
+
+    [Fact]
+    public async Task GetCompletionStatusForCategory_ReturnsOkResultWithCategoryCompletionStatus()
+    {
+        int categoryId = 1;
+
+        var expectedResponse = new CategoryCompletionStatusResponseDto()
+        {
+            CompletionPercentage = 50,
+            CompletionStatusStats = new StatusStatisticsDto()
+            {
+                NumberOfPendingTasks = 1,
+                NumberOfInProgressTasks = 1,
+                NumberOfCompletedTasks = 1,
+                NumberOfArchivedTasks = 1,
+                NumberOfLockedTasks = 1,
+            }
+        };
+
+        _categoriesServiceMock.Setup(service => service.GetCompletionStatusForCategoryAsync(categoryId))
+            .ReturnsAsync(expectedResponse);
+
+        // Act
+        var result = await _categoriesController.GetCompletionStatusForCategory(categoryId);
+
+        // Assert
+        var okObjectResult = Assert.IsType<OkObjectResult>(result.Result);
+        Assert.Equal(expectedResponse, okObjectResult.Value);
+
+        _categoriesServiceMock.Verify(service => service.GetCompletionStatusForCategoryAsync(categoryId), Times.Once);
     }
 
     #endregion

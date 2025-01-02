@@ -6,7 +6,7 @@ using TaskManagementSystem.DTOs.Response;
 using TaskManagementSystem.Enums;
 using TaskManagementSystem.Interfaces;
 
-namespace TaskManagementSystem.Tests.UnitTests;
+namespace TaskManagementSystem.Tests.UnitTests.Controllers;
 
 public sealed class TasksControllerTests
 {
@@ -52,6 +52,7 @@ public sealed class TasksControllerTests
         // Assert
         var okResult = Assert.IsType<OkObjectResult>(result.Result);
         Assert.Equal(expectedTask, okResult.Value);
+
         _tasksServiceMock.Verify(services => services.CreateTaskAsync(taskForCreate), Times.Once);
     }
 
@@ -60,26 +61,32 @@ public sealed class TasksControllerTests
     #region GetAllTasks
 
     [Fact]
-    public async Task GetAllTasks_SortByPriorityAscendingEqualsTrue_ReturnsOkResultWithAllTasks_OrderedByPriorityAscending()
+    public async Task GetAllTasks_SortByInstructionsProvided_ReturnsOkResultWithAllTasks_OrderedBySortByInstructions()
     {
         // Arrange
-        var sortByPriorityAscending = true;
         var expectedResponse = new List<TaskResponseDto>()
         {
             new TaskResponseDto() {Title = "1"},
             new TaskResponseDto() {Title = "2"}
         };
 
-        _tasksServiceMock.Setup(service => service.GetAllTasksAsync(sortByPriorityAscending))
+        var sortByInstructions = new GetAllTasksRequestDto()
+        {
+            Property = SortingTaskProperty.Title,
+            IsAscending = true
+        };
+
+        _tasksServiceMock.Setup(service => service.GetAllTasksAsync(sortByInstructions))
             .ReturnsAsync(expectedResponse);
 
         // Act
-        var result = await _tasksController.GetAllTasks(sortByPriorityAscending);
+        var result = await _tasksController.GetAllTasks(sortByInstructions);
 
         // Assert
         var okResult = Assert.IsType<OkObjectResult>(result.Result);
         Assert.Equal(expectedResponse, okResult.Value);
-        _tasksServiceMock.Verify(services => services.GetAllTasksAsync(sortByPriorityAscending), Times.Once);
+
+        _tasksServiceMock.Verify(services => services.GetAllTasksAsync(sortByInstructions), Times.Once);
     }
 
     #endregion
@@ -105,6 +112,7 @@ public sealed class TasksControllerTests
         // Assert
         var okResult = Assert.IsType<OkObjectResult>(result.Result);
         Assert.Equal(expectedTask, okResult.Value);
+
         _tasksServiceMock.Verify(services => services.GetTaskByIdAsync(taskId), Times.Once);
     }
 
@@ -139,7 +147,33 @@ public sealed class TasksControllerTests
         // Assert
         var okResult = Assert.IsType<OkObjectResult>(result.Result);
         Assert.Equal(expectedTask, okResult.Value);
+
         _tasksServiceMock.Verify(services => services.UpdateTaskAsync(taskId, taskForUpdate), Times.Once);
+    }
+
+    #endregion
+
+    #region UnlockTask
+
+    [Fact]
+    public async Task UnlockTask_ReturnsNoContentResult()
+    {
+        // Arrange
+        var taskId = 1;
+
+        var unlockDto = new UnlockTaskRequestDto()
+        {
+            Status = Status.InProgress
+        };
+
+
+        // Act
+        var result = await _tasksController.UnlockTask(taskId, unlockDto);
+
+        // Assert
+        var okResult = Assert.IsType<NoContentResult>(result);
+
+        _tasksServiceMock.Verify(services => services.UnlockTaskAsync(taskId, unlockDto), Times.Once);
     }
 
     #endregion
@@ -147,16 +181,22 @@ public sealed class TasksControllerTests
     #region DeleteTask
 
     [Fact]
-    public async Task DeleteTask_ReturnsOkResult()
+    public async Task DeleteTask_ReturnsOkResultWithDeleteAction()
     {
         // Arrange
         var taskId = 1;
+        var expectedDeleteAction = DeleteAction.Locked;
+
+        _tasksServiceMock.Setup(service => service.DeleteTaskAsync(taskId))
+            .ReturnsAsync(expectedDeleteAction);
 
         // Act
         var result = await _tasksController.DeleteTask(taskId);
 
         // Assert
-        var okResult = Assert.IsType<OkResult>(result);
+        var okResult = Assert.IsType<OkObjectResult>(result);
+        Assert.Equal(expectedDeleteAction, okResult.Value);
+
         _tasksServiceMock.Verify(services => services.DeleteTaskAsync(taskId), Times.Once);
     }
 
