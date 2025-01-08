@@ -1,26 +1,31 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Mapster;
+using MediatR;
+using Microsoft.AspNetCore.Mvc;
 using TaskManagementSystem.Constants;
-using TaskManagementSystem.DTOs.Request;
-using TaskManagementSystem.DTOs.Response;
-using TaskManagementSystem.Interfaces;
+using TaskManagementSystem.Features.Categories;
+using TaskManagementSystem.Features.Categories.DTOs;
+using TaskManagementSystem.Features.Categories.Shared;
+using TaskManagementSystem.Features.Shared.DTOs;
 
 namespace TaskManagementSystem.Controllers;
 
 [ApiController]
 public class CategoriesController : ControllerBase
 {
-    private readonly ICategoriesService _categoriesService;
+    private readonly IMediator _mediator;
 
-    public CategoriesController(ICategoriesService categoriesService)
+    public CategoriesController(IMediator mediator)
     {
-        _categoriesService = categoriesService;
+        _mediator = mediator;
     }
 
     [HttpPost]
     [Route(RouteConstants.Categories)]
     public async Task<ActionResult<CategoryResponseDto>> CreateCategory([FromBody] CategoryRequestDto categoryDto)
     {
-        var result = await _categoriesService.CreateCategoryAsync(categoryDto);
+        var command = categoryDto.Adapt<CreateCategoryCommand>();
+
+        var result = await _mediator.Send(command);
 
         return Ok(result);
     }
@@ -29,7 +34,9 @@ public class CategoriesController : ControllerBase
     [Route(RouteConstants.Categories)]
     public async Task<ActionResult<IEnumerable<CategoryResponseDto>>> GetAllCategories()
     {
-        var result = await _categoriesService.GetAllCategoriesAsync();
+        var query = new GetAllCategoriesQuery();
+
+        var result = await _mediator.Send(query);
 
         return Ok(result);
     }
@@ -38,7 +45,9 @@ public class CategoriesController : ControllerBase
     [Route(RouteConstants.CategoryById)]
     public async Task<ActionResult<CategoryResponseDto>> GetCategoryById([FromRoute] int id)
     {
-        var result = await _categoriesService.GetCategoryByIdAsync(id);
+        var query = new GetCategoryByIdQuery(id);
+
+        var result = await _mediator.Send(query);
 
         return Ok(result);
     }
@@ -47,7 +56,10 @@ public class CategoriesController : ControllerBase
     [Route(RouteConstants.CategoryById)]
     public async Task<ActionResult<CategoryResponseDto>> UpdateCategory([FromRoute] int id, [FromBody] CategoryRequestDto categoryDto)
     {
-        var result = await _categoriesService.UpdateCategoryAsync(id, categoryDto);
+        var command = new UpdateCategoryCommand(id);
+        command = categoryDto.Adapt(command);
+
+        var result = await _mediator.Send(command);
 
         return Ok(result);
     }
@@ -56,7 +68,9 @@ public class CategoriesController : ControllerBase
     [Route(RouteConstants.CategoryById)]
     public async Task<ActionResult> DeleteCategory([FromRoute] int id)
     {
-        await _categoriesService.DeleteCategoryAsync(id);
+        var command = new DeleteCategoryCommand(id);
+
+        await _mediator.Send(command);
 
         return Ok();
     }
@@ -65,7 +79,9 @@ public class CategoriesController : ControllerBase
     [Route(RouteConstants.TasksByCategory)]
     public async Task<ActionResult<List<TaskResponseDto>>> GetTasksByCategory([FromRoute] int id)
     {
-        var result = await _categoriesService.GetTasksByCategoryAsync(id);
+        var query = new GetTasksForCategoryQuery(id);
+
+        var result = await _mediator.Send(query);
         
         return Ok(result);
     }
@@ -74,7 +90,9 @@ public class CategoriesController : ControllerBase
     [Route(RouteConstants.CompletionStatus)]
     public async Task<ActionResult<CategoryCompletionStatusResponseDto>> GetCompletionStatusForCategory([FromRoute] int id)
     {
-        var result = await _categoriesService.GetCompletionStatusForCategoryAsync(id);
+        var query = new GetCompletionStatusForCategoryQuery(id);
+
+        var result = await _mediator.Send(query);
 
         return Ok(result);
     }

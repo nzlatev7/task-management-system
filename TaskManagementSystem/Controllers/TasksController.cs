@@ -1,35 +1,42 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Mapster;
+using MediatR;
+using TaskManagementSystem.Enums;
+using Microsoft.AspNetCore.Mvc;
 using TaskManagementSystem.Constants;
-using TaskManagementSystem.DTOs.Request;
-using TaskManagementSystem.DTOs.Response;
-using TaskManagementSystem.Interfaces;
+using TaskManagementSystem.Features.Tasks;
+using TaskManagementSystem.Features.Tasks.DTOs;
+using TaskManagementSystem.Features.Shared.DTOs;
 
 namespace TaskManagementSystem.Controllers;
 
 [ApiController]
 public class TasksController : ControllerBase
 {
-    private readonly ITasksService _tasksService;
+    private readonly IMediator _mediator;
 
-    public TasksController(ITasksService tasksService)
+    public TasksController(IMediator mediator)
     {
-        _tasksService = tasksService;
+        _mediator = mediator;
     }
 
     [HttpPost]
     [Route(RouteConstants.Tasks)]
     public async Task<ActionResult<TaskResponseDto>> CreateTask([FromBody] CreateTaskRequestDto taskDto)
     {
-        var result = await _tasksService.CreateTaskAsync(taskDto);
+        var command = taskDto.Adapt<CreateTaskCommand>();
+
+        var result = await _mediator.Send(command);
 
         return Ok(result);
     }
 
     [HttpGet]
     [Route(RouteConstants.Tasks)]
-    public async Task<ActionResult<IEnumerable<TaskResponseDto>>> GetAllTasks([FromQuery] GetAllTasksRequestDto sortBy)
+    public async Task<ActionResult<IEnumerable<TaskResponseDto>>> GetAllTasks([FromQuery] GetAllTasksRequestDto sortByDto)
     {
-        var result = await _tasksService.GetAllTasksAsync(sortBy);
+        var query = sortByDto.Adapt<GetAllTasksQuery>();
+
+        var result = await _mediator.Send(query);
 
         return Ok(result);
     }
@@ -38,7 +45,9 @@ public class TasksController : ControllerBase
     [Route(RouteConstants.TaskById)]
     public async Task<ActionResult<TaskResponseDto>> GetTaskById([FromRoute] int id)
     {
-        var result = await _tasksService.GetTaskByIdAsync(id);
+        var query = new GetTaskByIdQuery(id);
+
+        var result = await _mediator.Send(query);
 
         return Ok(result);
     }
@@ -47,7 +56,10 @@ public class TasksController : ControllerBase
     [Route(RouteConstants.TaskById)]
     public async Task<ActionResult<TaskResponseDto>> UpdateTask([FromRoute] int id, [FromBody] UpdateTaskRequestDto taskDto)
     {
-        var result = await _tasksService.UpdateTaskAsync(id, taskDto);
+        var command = new UpdateTaskCommand(id);
+        command = taskDto.Adapt(command);
+
+        var result = await _mediator.Send(command);
 
         return Ok(result);
     }
@@ -56,16 +68,21 @@ public class TasksController : ControllerBase
     [Route(RouteConstants.TaskById)]
     public async Task<ActionResult> UnlockTask([FromRoute] int id, [FromBody] UnlockTaskRequestDto unlockDto)
     {
-        await _tasksService.UnlockTaskAsync(id, unlockDto);
-        
+        var command = new UnlockTaskCommand(id);
+        command = unlockDto.Adapt(command);
+
+        await _mediator.Send(command);
+
         return NoContent();
     }
 
     [HttpDelete]
     [Route(RouteConstants.TaskById)]
-    public async Task<ActionResult> DeleteTask([FromRoute] int id)
+    public async Task<ActionResult<DeleteAction>> DeleteTask([FromRoute] int id)
     {
-        var deleteAction = await _tasksService.DeleteTaskAsync(id);
+        var command = new DeleteTaskCommand(id);
+
+        var deleteAction = await _mediator.Send(command);
 
         return Ok(deleteAction);
     }

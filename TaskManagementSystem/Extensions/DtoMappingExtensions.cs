@@ -1,7 +1,8 @@
 ﻿using TaskManagementSystem.Database.Models;
-using TaskManagementSystem.DTOs.Response;
+using TaskManagementSystem.Features.Categories.Shared;
+using TaskManagementSystem.Features.Shared.DTOs;
 
-namespace TaskManagementSystem.Helpers;
+namespace TaskManagementSystem.Extensions;
 
 public static class DtoMappingExtensions
 {

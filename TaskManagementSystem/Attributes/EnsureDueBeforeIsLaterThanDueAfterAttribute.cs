@@ -1,6 +1,6 @@
 ﻿using System.ComponentModel.DataAnnotations;
 using TaskManagementSystem.Constants;
-using TaskManagementSystem.DTOs.Request;
+using TaskManagementSystem.Features.Reports.DTOs;
 
 namespace TaskManagementSystem.Attributes;
 

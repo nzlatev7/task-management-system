@@ -1,26 +1,29 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Mapster;
+using MediatR;
+using Microsoft.AspNetCore.Mvc;
 using TaskManagementSystem.Constants;
-using TaskManagementSystem.DTOs.Request;
-using TaskManagementSystem.DTOs.Response;
-using TaskManagementSystem.Interfaces;
+using TaskManagementSystem.Features.Reports;
+using TaskManagementSystem.Features.Reports.DTOs;
 
 namespace TaskManagementSystem.Controllers;
 
 [ApiController]
 public class ReportsControllers : ControllerBase
 {
-    private readonly IReportsService _reportsService;
+    private readonly IMediator _mediator;
 
-    public ReportsControllers(IReportsService reportsService)
+    public ReportsControllers(IMediator mediator)
     {
-        _reportsService = reportsService;
+        _mediator = mediator;
     }
 
     [HttpGet]
     [Route(RouteConstants.ReportForTasks)]
     public async Task<ActionResult<IEnumerable<ReportTasksResponseDto>>> GetReportForTasks([FromQuery] ReportTasksRequestDto reportFilters)
     {
-        var result = await _reportsService.GetReportForTasksAsync(reportFilters);
+        var query = reportFilters.Adapt<GetReportForTasksQuery>();
+
+        var result = await _mediator.Send(query);
 
         return Ok(result);
     }

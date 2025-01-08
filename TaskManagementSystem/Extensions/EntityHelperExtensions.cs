@@ -1,13 +1,13 @@
 ﻿using System.Linq.Expressions;
 using TaskManagementSystem.Database.Models;
-using TaskManagementSystem.DTOs.Request;
 using TaskManagementSystem.Enums;
+using TaskManagementSystem.Features.Tasks;
 
 namespace TaskManagementSystem.Extensions;
 
 public static class EntityHelperExtensions
 {
-    public static IQueryable<TaskEntity> SortBy(this IQueryable<TaskEntity> tasks, GetAllTasksRequestDto sortByInstructions)
+    public static IQueryable<TaskEntity> SortBy(this IQueryable<TaskEntity> tasks, GetAllTasksQuery sortByInstructions)
     {
         switch (sortByInstructions.Property)
         {

@@ -1,17 +1,32 @@
 ﻿using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.AspNetCore.Mvc;
+using TaskManagementSystem.Constants;
 using TaskManagementSystem.Exceptions;
 
 namespace TaskManagementSystem.ExceptionHandlers;
 
 public class ConflictExceptionHanlder : IExceptionHandler       
 {
-    public async ValueTask<bool> TryHandleAsync(HttpContext httpContext, Exception exception, CancellationToken cancellationToken)
+    private readonly ILogger<ConflictExceptionHanlder> _logger;
+
+    public ConflictExceptionHanlder(ILogger<ConflictExceptionHanlder> logger)
+    {
+        _logger = logger;
+    }
+
+    public async ValueTask<bool> TryHandleAsync(
+        HttpContext httpContext,
+        Exception exception,
+        CancellationToken cancellationToken)
     {
         if (exception is not ConflictException conflictException)
         {
             return false;
         }
+
+        _logger.LogWarning(LoggingMessageConstants.ConflictException,
+            conflictException.Message,
+            httpContext.Request.Path);
 
         var problemDetails = new ProblemDetails
         {
