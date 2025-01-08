@@ -1,12 +1,12 @@
 ﻿using TaskManagementSystem.Database;
 using TaskManagementSystem.Database.Models;
 using TaskManagementSystem.Enums;
-using TaskManagementSystem.Interfaces;
-using TaskManagementSystem.TaskDeleteStategy;
+using TaskManagementSystem.Features.Tasks.DeleteTask.Interfaces;
+using TaskManagementSystem.Features.Tasks.DeleteTask.Strategy;
 using TaskManagementSystem.Tests.Fixtures;
 using TaskManagementSystem.Tests.TestUtilities;
 
-namespace TaskManagementSystem.Tests.IntegrationTests.TaskDeleteStrategies;
+namespace TaskManagementSystem.Tests.IntegrationTests.Features.Tasks.DeleteTask.Strategy;
 
 public sealed class TaskDeleteStrategiesTests : IClassFixture<TestDatabaseFixture>, IAsyncLifetime
 {

@@ -3,10 +3,10 @@ using TaskManagementSystem.Constants;
 using TaskManagementSystem.Database;
 using TaskManagementSystem.Database.Models;
 using TaskManagementSystem.Enums;
-using TaskManagementSystem.Interfaces;
-using TaskManagementSystem.TaskDeleteStategy;
+using TaskManagementSystem.Features.Tasks.DeleteTask.Interfaces;
+using TaskManagementSystem.Features.Tasks.DeleteTask.Strategy;
 
-namespace TaskManagementSystem.Tests.UnitTests.TaskDeleteStrategy;
+namespace TaskManagementSystem.Tests.UnitTests.Features.Tasks.DeleteTask.Strategy;
 
 public sealed class TaskDeleteOrchestratorTests
 {

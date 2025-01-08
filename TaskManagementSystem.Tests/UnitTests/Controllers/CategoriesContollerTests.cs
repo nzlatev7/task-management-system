@@ -1,21 +1,23 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using MediatR;
+using Microsoft.AspNetCore.Mvc;
 using Moq;
 using TaskManagementSystem.Controllers;
-using TaskManagementSystem.DTOs.Request;
-using TaskManagementSystem.DTOs.Response;
-using TaskManagementSystem.Interfaces;
+using TaskManagementSystem.Features.Categories;
+using TaskManagementSystem.Features.Categories.Shared;
+using TaskManagementSystem.Features.Shared.DTOs;
+using TaskManagementSystem.Features.Categories.DTOs;
 
 namespace TaskManagementSystem.Tests.UnitTests.Controllers;
 
 public sealed class CategoriesContollerTests
 {
-    private readonly Mock<ICategoriesService> _categoriesServiceMock;
+    private readonly Mock<IMediator> _mediatorMock;
     private readonly CategoriesController _categoriesController;
 
     public CategoriesContollerTests()
     {
-        _categoriesServiceMock = new Mock<ICategoriesService>();
-        _categoriesController = new CategoriesController(_categoriesServiceMock.Object);
+        _mediatorMock = new Mock<IMediator>();
+        _categoriesController = new CategoriesController(_mediatorMock.Object);
     }
 
     #region CreateCategory
@@ -36,7 +38,7 @@ public sealed class CategoriesContollerTests
             Description = categoryForCreate.Description,
         };
 
-        _categoriesServiceMock.Setup(service => service.CreateCategoryAsync(categoryForCreate))
+        _mediatorMock.Setup(m => m.Send(It.IsAny<CreateCategoryCommand>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(expectedCategory);
 
         // Act
@@ -46,7 +48,7 @@ public sealed class CategoriesContollerTests
         var okResult = Assert.IsType<OkObjectResult>(result.Result);
         Assert.Equal(expectedCategory, okResult.Value);
 
-        _categoriesServiceMock.Verify(service => service.CreateCategoryAsync(categoryForCreate), Times.Once);
+        _mediatorMock.Verify(m => m.Send(It.IsAny<CreateCategoryCommand>(), It.IsAny<CancellationToken>()), Times.Once);
     }
 
     #endregion
@@ -63,7 +65,7 @@ public sealed class CategoriesContollerTests
             new CategoryResponseDto() {Name = "test2" }
         };
 
-        _categoriesServiceMock.Setup(service => service.GetAllCategoriesAsync())
+        _mediatorMock.Setup(m => m.Send(It.IsAny<GetAllCategoriesQuery>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(expectedResponse);
 
         // Act
@@ -73,7 +75,7 @@ public sealed class CategoriesContollerTests
         var okResult = Assert.IsType<OkObjectResult>(result.Result);
         Assert.Equal(expectedResponse, okResult.Value);
 
-        _categoriesServiceMock.Verify(service => service.GetAllCategoriesAsync(), Times.Once);
+        _mediatorMock.Verify(m => m.Send(It.IsAny<GetAllCategoriesQuery>(), It.IsAny<CancellationToken>()), Times.Once);
     }
 
     #endregion
@@ -92,7 +94,7 @@ public sealed class CategoriesContollerTests
             Description = "test1"
         };
 
-        _categoriesServiceMock.Setup(service => service.GetCategoryByIdAsync(categoryId))
+        _mediatorMock.Setup(m => m.Send(It.IsAny<GetCategoryByIdQuery>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(expectedCategory);
 
         // Act
@@ -102,7 +104,7 @@ public sealed class CategoriesContollerTests
         var okResult = Assert.IsType<OkObjectResult>(result.Result);
         Assert.Equal(expectedCategory, okResult.Value);
 
-        _categoriesServiceMock.Verify(service => service.GetCategoryByIdAsync(categoryId), Times.Once);
+        _mediatorMock.Verify(m => m.Send(It.IsAny<GetCategoryByIdQuery>(), It.IsAny<CancellationToken>()), Times.Once);
     }
 
     #endregion
@@ -125,7 +127,8 @@ public sealed class CategoriesContollerTests
             Name = categoryForUpdate.Name
         };
 
-        _categoriesServiceMock.Setup(service => service.UpdateCategoryAsync(categoryId, categoryForUpdate))
+
+        _mediatorMock.Setup(m => m.Send(It.IsAny<UpdateCategoryCommand>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(expectedCategory);
 
         // Act
@@ -135,7 +138,7 @@ public sealed class CategoriesContollerTests
         var okResult = Assert.IsType<OkObjectResult>(result.Result);
         Assert.Equal(expectedCategory, okResult.Value);
 
-        _categoriesServiceMock.Verify(service => service.UpdateCategoryAsync(categoryId, categoryForUpdate), Times.Once);
+        _mediatorMock.Verify(m => m.Send(It.IsAny<UpdateCategoryCommand>(), It.IsAny<CancellationToken>()), Times.Once);
     }
 
     #endregion
@@ -148,13 +151,15 @@ public sealed class CategoriesContollerTests
         // Arrange
         var categoryId = 1;
 
+        _mediatorMock.Setup(m => m.Send(It.IsAny<DeleteCategoryCommand>(), It.IsAny<CancellationToken>()));
+
         // Act
         var result = await _categoriesController.DeleteCategory(categoryId);
 
         // Assert
         var okResult = Assert.IsType<OkResult>(result);
 
-        _categoriesServiceMock.Verify(service => service.DeleteCategoryAsync(categoryId), Times.Once);
+        _mediatorMock.Verify(m => m.Send(It.IsAny<DeleteCategoryCommand>(), It.IsAny<CancellationToken>()), Times.Once);
     }
 
     #endregion
@@ -173,7 +178,7 @@ public sealed class CategoriesContollerTests
             new TaskResponseDto() { Title = "tast3" },
         };
 
-        _categoriesServiceMock.Setup(service => service.GetTasksByCategoryAsync(categoryId))
+        _mediatorMock.Setup(m => m.Send(It.IsAny<GetTasksForCategoryQuery>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(expectedResponse);
 
         // Act
@@ -183,7 +188,7 @@ public sealed class CategoriesContollerTests
         var okObjectResult = Assert.IsType<OkObjectResult>(result.Result);
         Assert.Equal(expectedResponse, okObjectResult.Value);
 
-        _categoriesServiceMock.Verify(service => service.GetTasksByCategoryAsync(categoryId), Times.Once);
+        _mediatorMock.Verify(m => m.Send(It.IsAny<GetTasksForCategoryQuery>(), It.IsAny<CancellationToken>()), Times.Once);
     }
 
     #endregion
@@ -208,7 +213,7 @@ public sealed class CategoriesContollerTests
             }
         };
 
-        _categoriesServiceMock.Setup(service => service.GetCompletionStatusForCategoryAsync(categoryId))
+        _mediatorMock.Setup(m => m.Send(It.IsAny<GetCompletionStatusForCategoryQuery>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(expectedResponse);
 
         // Act
@@ -218,7 +223,7 @@ public sealed class CategoriesContollerTests
         var okObjectResult = Assert.IsType<OkObjectResult>(result.Result);
         Assert.Equal(expectedResponse, okObjectResult.Value);
 
-        _categoriesServiceMock.Verify(service => service.GetCompletionStatusForCategoryAsync(categoryId), Times.Once);
+        _mediatorMock.Verify(m => m.Send(It.IsAny<GetCompletionStatusForCategoryQuery>(), It.IsAny<CancellationToken>()), Times.Once);
     }
 
     #endregion

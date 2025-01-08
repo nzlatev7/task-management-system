@@ -1,8 +1,11 @@
 ﻿using TaskManagementSystem.Database.Models;
-using TaskManagementSystem.DTOs.Request;
-using TaskManagementSystem.DTOs.Response;
 using TaskManagementSystem.Enums;
-using TaskManagementSystem.Helpers;
+using TaskManagementSystem.Extensions;
+using TaskManagementSystem.Features.Categories;
+using TaskManagementSystem.Features.Categories.Shared;
+using TaskManagementSystem.Features.Reports.DTOs;
+using TaskManagementSystem.Features.Shared.DTOs;
+using TaskManagementSystem.Features.Tasks;
 
 namespace TaskManagementSystem.Tests.TestUtilities;
 
@@ -11,10 +14,10 @@ public static class TestResultBuilder
     public static TaskResponseDto GetExpectedTask(TaskEntity task)
         => CreateBaseTaskResponse(task.Id, task.Title, task.Description, task.DueDate, task.Priority, task.IsCompleted, task.Status, task.CategoryId);
 
-    public static TaskResponseDto GetExpectedTask(int taskId, CreateTaskRequestDto task)
+    public static TaskResponseDto GetExpectedTask(int taskId, CreateTaskCommand task)
         => CreateBaseTaskResponse(taskId, task.Title, task.Description, task.DueDate, task.Priority, isCompleted: false, Status.Pending, task.CategoryId);
 
-    public static TaskResponseDto GetExpectedTask(int taskId, UpdateTaskRequestDto task)
+    public static TaskResponseDto GetExpectedTask(int taskId, UpdateTaskCommand task)
         => CreateBaseTaskResponse(taskId, task.Title, task.Description, task.DueDate, task.Priority, isCompleted: false, task.Status, task.CategoryId);
 
     public static List<TaskResponseDto> GetExpectedTasks(List<TaskEntity> tasks)
@@ -30,7 +33,7 @@ public static class TestResultBuilder
         return result;
     }
 
-    public static List<TaskResponseDto> GetOrderedTasks(List<TaskResponseDto> tasks, GetAllTasksRequestDto sortBy)
+    public static List<TaskResponseDto> GetOrderedTasks(List<TaskResponseDto> tasks, GetAllTasksQuery sortBy)
     {
         switch (sortBy.Property)
         {
@@ -69,8 +72,8 @@ public static class TestResultBuilder
             : tasks.OrderByDescending(expression).ToList();
     }
 
-    public static CategoryResponseDto GetExpectedCategory(int categoryId, CategoryRequestDto category)
-        => CreateBaseCategoryResponse(categoryId, category.Name, category.Description);
+    public static CategoryResponseDto GetExpectedCategory(int categoryId, CreateCategoryCommand request)
+        => CreateBaseCategoryResponse(categoryId, request.Name, request.Description);
 
     public static CategoryResponseDto GetExpectedCategory(CategoryEntity category)
         => CreateBaseCategoryResponse(category.Id, category.Name, category.Description);

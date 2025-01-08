@@ -1,29 +1,24 @@
-﻿using Microsoft.EntityFrameworkCore;
-using TaskManagementSystem.Database;
-using TaskManagementSystem.Database.Models;
-using TaskManagementSystem.DTOs.Request;
+﻿using TaskManagementSystem.Database.Models;
 using TaskManagementSystem.Enums;
-using TaskManagementSystem.Interfaces;
-using TaskManagementSystem.Services;
 using TaskManagementSystem.Tests.Fixtures;
 using TaskManagementSystem.Tests.TestUtilities;
+using TaskManagementSystem.Features.Reports;
 
-namespace TaskManagementSystem.Tests.IntegrationTests.Services;
+namespace TaskManagementSystem.Tests.IntegrationTests.Features.Reports.GetReportForTasks;
 
-public sealed class ReportsServiceTests : IClassFixture<TestDatabaseFixture>, IAsyncLifetime
+[Collection(nameof(ReportHandlerTestCollection))]
+public sealed class GetReportForTasksHandlerTests : IAsyncLifetime
 {
-    private readonly TaskManagementSystemDbContext _dbContext;
     private readonly TestDataManager _dataGenerator;
-    private readonly IReportsService _reportsService;
+    private readonly GetReportForTasksHandler _handler;
 
     private List<CategoryEntity> _categories = new();
 
-    public ReportsServiceTests(TestDatabaseFixture fixture)
+    public GetReportForTasksHandlerTests(TestDatabaseFixture fixture)
     {
-        _dbContext = fixture.DbContext;
-        _dataGenerator = new TestDataManager(_dbContext);
+        _dataGenerator = new TestDataManager(fixture.DbContext);
 
-        _reportsService = new ReportsService(_dbContext);
+        _handler = new GetReportForTasksHandler(fixture.DbContext);
     }
 
     public async Task InitializeAsync()
@@ -36,10 +31,8 @@ public sealed class ReportsServiceTests : IClassFixture<TestDatabaseFixture>, IA
         await _dataGenerator.ClearTestDataAsync();
     }
 
-    #region GetReportForTasks
-
     [Fact]
-    public async Task GetReportForTasksAsync_AllFiltersProvided_ReturnsFilteredTasksGroupedByCategory()
+    public async Task Handle_AllFiltersProvided_ReturnsFilteredTasksGroupedByCategory()
     {
         // Arrange
         var notMatchingTask1 = await _dataGenerator.InsertTasksAsync(count: 1, _categories[0].Id, tasksPriority: Priority.Medium, tasksStatus: Status.InProgress);
@@ -48,7 +41,7 @@ public sealed class ReportsServiceTests : IClassFixture<TestDatabaseFixture>, IA
         var targetTasks1 = await _dataGenerator.InsertTasksAsync(count: 4, _categories[0].Id, tasksPriority: Priority.High, tasksStatus: Status.Locked);
         var targetTasks2 = await _dataGenerator.InsertTasksAsync(count: 4, _categories[1].Id, tasksPriority: Priority.High, tasksStatus: Status.Locked);
 
-        var filtersDto = new ReportTasksRequestDto
+        var request = new GetReportForTasksQuery()
         {
             Status = targetTasks1[0].Status,
             Priority = targetTasks1[0].Priority,
@@ -57,17 +50,17 @@ public sealed class ReportsServiceTests : IClassFixture<TestDatabaseFixture>, IA
         };
 
         // Act
-        var tasksReport = await _reportsService.GetReportForTasksAsync(filtersDto);
+        var tasksReport = await _handler.Handle(request, new CancellationToken());
 
         // Assert
         var filteredTasks = notMatchingTask1
             .Concat(notMatchingTask2)
             .Concat(targetTasks1)
             .Concat(targetTasks2)
-            .Where(x => x.Status == filtersDto.Status
-                && x.Priority == filtersDto.Priority
-                && x.DueDate > filtersDto.DueAfter
-                && x.DueDate < filtersDto.DueBefore)
+            .Where(x => x.Status == request.Status
+                && x.Priority == request.Priority
+                && x.DueDate > request.DueAfter
+                && x.DueDate < request.DueBefore)
             .ToList();
 
         var expectedTasksReport = TestResultBuilder.GetExpectedReport(_categories, filteredTasks);
@@ -75,7 +68,7 @@ public sealed class ReportsServiceTests : IClassFixture<TestDatabaseFixture>, IA
     }
 
     [Fact]
-    public async Task GetReportForTasksAsync_FiltersNotProvided_ReturnsAllTasksGroupedByCategory()
+    public async Task Handle_FiltersNotProvided_ReturnsAllTasksGroupedByCategory()
     {
         // Arrange
         var targetTasks1 = await _dataGenerator.InsertTasksAsync(count: 1, _categories[0].Id, tasksPriority: Priority.Medium, tasksStatus: Status.InProgress);
@@ -84,7 +77,7 @@ public sealed class ReportsServiceTests : IClassFixture<TestDatabaseFixture>, IA
         var targetTasks4 = await _dataGenerator.InsertTasksAsync(count: 1, _categories[1].Id, tasksPriority: Priority.High, tasksStatus: Status.Locked);
 
         // Act
-        var tasksReport = await _reportsService.GetReportForTasksAsync(new ReportTasksRequestDto());
+        var tasksReport = await _handler.Handle(new GetReportForTasksQuery(), new CancellationToken());
 
         // Assert
         var allTasks = targetTasks1
@@ -96,6 +89,4 @@ public sealed class ReportsServiceTests : IClassFixture<TestDatabaseFixture>, IA
         var expectedTasksReport = TestResultBuilder.GetExpectedReport(_categories, allTasks);
         Assert.Equivalent(expectedTasksReport, tasksReport);
     }
-
-    #endregion
 }
