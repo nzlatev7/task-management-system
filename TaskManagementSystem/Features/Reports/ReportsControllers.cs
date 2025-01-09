@@ -2,10 +2,9 @@
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
 using TaskManagementSystem.Constants;
-using TaskManagementSystem.Features.Reports;
 using TaskManagementSystem.Features.Reports.DTOs;
 
-namespace TaskManagementSystem.Controllers;
+namespace TaskManagementSystem.Features.Reports;
 
 [ApiController]
 public class ReportsControllers : ControllerBase

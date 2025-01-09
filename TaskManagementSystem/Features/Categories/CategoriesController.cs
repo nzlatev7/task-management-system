@@ -2,12 +2,11 @@
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
 using TaskManagementSystem.Constants;
-using TaskManagementSystem.Features.Categories;
 using TaskManagementSystem.Features.Categories.DTOs;
 using TaskManagementSystem.Features.Categories.Shared;
 using TaskManagementSystem.Features.Shared.DTOs;
 
-namespace TaskManagementSystem.Controllers;
+namespace TaskManagementSystem.Features.Categories;
 
 [ApiController]
 public class CategoriesController : ControllerBase
@@ -82,7 +81,7 @@ public class CategoriesController : ControllerBase
         var query = new GetTasksForCategoryQuery(id);
 
         var result = await _mediator.Send(query);
-        
+
         return Ok(result);
     }
 

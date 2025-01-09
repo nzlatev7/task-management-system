@@ -1,11 +1,10 @@
 ﻿using System.Linq.Expressions;
 using TaskManagementSystem.Database.Models;
 using TaskManagementSystem.Enums;
-using TaskManagementSystem.Features.Tasks;
 
-namespace TaskManagementSystem.Extensions;
+namespace TaskManagementSystem.Features.Tasks.GetAllTasks;
 
-public static class EntityHelperExtensions
+public static class GetAllTasksSortingHelper
 {
     public static IQueryable<TaskEntity> SortBy(this IQueryable<TaskEntity> tasks, GetAllTasksQuery sortByInstructions)
     {
@@ -40,9 +39,9 @@ public static class EntityHelperExtensions
         this IQueryable<TSource> source,
         Expression<Func<TSource, TKey>> keySelector,
         bool isAscending)
-    { 
-        return isAscending 
-            ? source.OrderBy(keySelector) 
+    {
+        return isAscending
+            ? source.OrderBy(keySelector)
             : source.OrderByDescending(keySelector);
     }
 }

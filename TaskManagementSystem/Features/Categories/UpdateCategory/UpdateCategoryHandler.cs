@@ -4,6 +4,7 @@ using TaskManagementSystem.Database;
 using TaskManagementSystem.Exceptions;
 using TaskManagementSystem.Extensions;
 using TaskManagementSystem.Features.Categories.Shared;
+using TaskManagementSystem.Features.Categories.UpdateCategory.Extensions;
 
 namespace TaskManagementSystem.Features.Categories;
 

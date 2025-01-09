@@ -1,8 +1,8 @@
 ﻿using MediatR;
 using Microsoft.EntityFrameworkCore;
 using TaskManagementSystem.Database;
-using TaskManagementSystem.Extensions;
 using TaskManagementSystem.Features.Shared.DTOs;
+using TaskManagementSystem.Features.Tasks.GetAllTasks;
 
 namespace TaskManagementSystem.Features.Tasks;
 

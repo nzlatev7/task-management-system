@@ -3,11 +3,10 @@ using MediatR;
 using TaskManagementSystem.Enums;
 using Microsoft.AspNetCore.Mvc;
 using TaskManagementSystem.Constants;
-using TaskManagementSystem.Features.Tasks;
 using TaskManagementSystem.Features.Tasks.DTOs;
 using TaskManagementSystem.Features.Shared.DTOs;
 
-namespace TaskManagementSystem.Controllers;
+namespace TaskManagementSystem.Features.Tasks;
 
 [ApiController]
 public class TasksController : ControllerBase

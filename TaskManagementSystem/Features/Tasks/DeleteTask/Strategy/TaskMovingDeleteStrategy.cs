@@ -1,7 +1,7 @@
 ﻿using TaskManagementSystem.Database;
 using TaskManagementSystem.Database.Models;
 using TaskManagementSystem.Enums;
-using TaskManagementSystem.Extensions;
+using TaskManagementSystem.Features.Tasks.DeleteTask.Extensions;
 using TaskManagementSystem.Features.Tasks.DeleteTask.Interfaces;
 
 namespace TaskManagementSystem.Features.Tasks.DeleteTask.Strategy;
