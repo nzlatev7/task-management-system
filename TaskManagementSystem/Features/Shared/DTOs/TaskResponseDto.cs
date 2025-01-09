@@ -16,8 +16,6 @@ public sealed class TaskResponseDto
     [JsonConverter(typeof(JsonStringEnumConverter))]
     public Priority Priority { get; set; }
 
-    public bool IsCompleted { get; set; }
-
     [JsonConverter(typeof(JsonStringEnumConverter))]
     public Status Status { get; set; }
 

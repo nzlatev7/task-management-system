@@ -2,8 +2,8 @@
 using TaskManagementSystem.Constants;
 using TaskManagementSystem.Database;
 using TaskManagementSystem.Exceptions;
-using TaskManagementSystem.Extensions;
 using TaskManagementSystem.Features.Categories.Shared;
+using TaskManagementSystem.Features.Shared.Extensions;
 
 namespace TaskManagementSystem.Features.Categories;
 

@@ -12,7 +12,6 @@ public static class CreateTaskMappingExtensions
             Title = request.Title,
             Description = request.Description,
             DueDate = request.DueDate,
-            IsCompleted = false,
             Status = Status.Pending,
             CategoryId = request.CategoryId
         };

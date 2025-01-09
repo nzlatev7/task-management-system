@@ -1,8 +1,8 @@
 ﻿using MediatR;
 using TaskManagementSystem.Database;
-using TaskManagementSystem.Extensions;
 using TaskManagementSystem.Features.Categories.Shared;
 using TaskManagementSystem.Features.Categories.CreateCategory.Extensions;
+using TaskManagementSystem.Features.Shared.Extensions;
 
 namespace TaskManagementSystem.Features.Categories;
 

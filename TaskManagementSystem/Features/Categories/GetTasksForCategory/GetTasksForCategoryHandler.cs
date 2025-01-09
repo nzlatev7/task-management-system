@@ -5,6 +5,7 @@ using TaskManagementSystem.Constants;
 using TaskManagementSystem.Database;
 using TaskManagementSystem.Exceptions;
 using TaskManagementSystem.Features.Shared.DTOs;
+using TaskManagementSystem.Features.Shared.Extensions;
 
 namespace TaskManagementSystem.Features.Categories;
 
@@ -30,17 +31,8 @@ public class GetTasksForCategoryHandler
 
         var tasks = await _dbContext.Tasks
             .Where(x => x.CategoryId == request.Id)
-            .Select(x => new TaskResponseDto
-            {
-                Id = x.Id,
-                Title = x.Title,
-                Description = x.Description,
-                DueDate = x.DueDate,
-                Priority = x.Priority,
-                IsCompleted = x.IsCompleted,
-                Status = x.Status,
-                CategoryId = x.CategoryId
-            }).ToListAsync();
+            .Select(x => x.ToOutDto())
+            .ToListAsync();
 
         return tasks;
     }

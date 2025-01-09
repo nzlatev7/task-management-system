@@ -2,8 +2,8 @@
 using Microsoft.EntityFrameworkCore;
 using TaskManagementSystem.Database;
 using TaskManagementSystem.Database.Models;
-using TaskManagementSystem.Extensions;
 using TaskManagementSystem.Features.Reports.DTOs;
+using TaskManagementSystem.Features.Shared.Extensions;
 
 namespace TaskManagementSystem.Features.Reports;
 

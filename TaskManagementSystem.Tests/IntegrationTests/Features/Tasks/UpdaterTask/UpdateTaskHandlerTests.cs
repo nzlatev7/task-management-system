@@ -180,29 +180,4 @@ public sealed class UpdateTaskHandlerTests : IAsyncLifetime
         var defaultPriority = Priority.Medium;
         Assert.Equal(defaultPriority, resultTask.Priority);
     }
-
-    [Fact]
-    public async Task Handle_TaskExists_NotCompletedTask_MovedToCompleted_SetIsCompletedEqaulsTrue()
-    {
-        // Arrange
-        var tasks = await _dataGenerator.InsertTasksAsync(count: 1, _targetCategoryId);
-        var targetTask = tasks[0];
-
-        var request = new UpdateTaskCommand(id: targetTask.Id)
-        {
-            Title = targetTask.Title,
-            Status = Status.Completed,
-            CategoryId = targetTask.CategoryId
-        };
-
-        _categoryCheckerMock.Setup(c => c.CategoryExistsAsync(request.CategoryId))
-            .ReturnsAsync(true);
-
-        // Act
-        var resultTask = await _handler.Handle(request, new CancellationToken());
-
-        // Assert
-        Assert.True(resultTask.IsCompleted);
-        Assert.Equal(request.Status, resultTask.Status);
-    }
 }

@@ -2,7 +2,7 @@
 using TaskManagementSystem.Features.Categories.Shared;
 using TaskManagementSystem.Features.Shared.DTOs;
 
-namespace TaskManagementSystem.Extensions;
+namespace TaskManagementSystem.Features.Shared.Extensions;
 
 public static class DtoMappingExtensions
 {
@@ -15,7 +15,6 @@ public static class DtoMappingExtensions
             Description = taskEntity.Description,
             Priority = taskEntity.Priority,
             DueDate = taskEntity.DueDate,
-            IsCompleted = taskEntity.IsCompleted,
             Status = taskEntity.Status,
             CategoryId = taskEntity.CategoryId
         };

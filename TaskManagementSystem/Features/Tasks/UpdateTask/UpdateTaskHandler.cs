@@ -5,8 +5,8 @@ using TaskManagementSystem.Database;
 using TaskManagementSystem.Database.Models;
 using TaskManagementSystem.Enums;
 using TaskManagementSystem.Exceptions;
-using TaskManagementSystem.Extensions;
 using TaskManagementSystem.Features.Shared.DTOs;
+using TaskManagementSystem.Features.Shared.Extensions;
 using TaskManagementSystem.Features.Tasks.UpdateTask.Extensions;
 
 namespace TaskManagementSystem.Features.Tasks;

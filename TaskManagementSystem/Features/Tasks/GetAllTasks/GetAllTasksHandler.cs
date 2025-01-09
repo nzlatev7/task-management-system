@@ -28,7 +28,6 @@ public class GetAllTasksHandler : IRequestHandler<GetAllTasksQuery, IEnumerable<
                 Description = x.Description,
                 DueDate = x.DueDate,
                 Priority = x.Priority,
-                IsCompleted = x.IsCompleted,
                 Status = x.Status,
                 CategoryId = x.CategoryId
             }).ToListAsync();
