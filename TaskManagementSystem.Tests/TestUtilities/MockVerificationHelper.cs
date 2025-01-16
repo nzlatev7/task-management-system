@@ -1,6 +1,6 @@
 ﻿using Microsoft.Extensions.Logging;
 using Moq;
-using TaskManagementSystem.Interfaces;
+using TaskManagementSystem.Checkers;
 
 namespace TaskManagementSystem.Tests.TestUtilities;
 

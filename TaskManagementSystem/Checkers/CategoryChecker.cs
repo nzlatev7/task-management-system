@@ -1,6 +1,5 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using TaskManagementSystem.Database;
-using TaskManagementSystem.Interfaces;
 
 namespace TaskManagementSystem.Checkers;
 

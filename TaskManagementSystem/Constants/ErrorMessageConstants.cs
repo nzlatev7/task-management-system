@@ -1,5 +1,5 @@
 ﻿using TaskManagementSystem.Database.Models;
-using TaskManagementSystem.DTOs.Request;
+using TaskManagementSystem.Features.Tasks.DTOs;
 
 namespace TaskManagementSystem.Constants;
 

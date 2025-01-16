@@ -50,7 +50,6 @@ public class TestDataManager
                 Description = nameof(TaskEntity.Description),
                 DueDate = roundedDateTime.AddDays(i),
                 Priority = tasksPriority,
-                IsCompleted = false,
                 Status = tasksStatus,
                 CategoryId = categoryId
             };

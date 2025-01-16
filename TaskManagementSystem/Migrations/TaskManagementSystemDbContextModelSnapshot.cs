@@ -118,10 +118,6 @@ namespace TaskManagementSystem.Migrations
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("due_date");
 
-                    b.Property<bool>("IsCompleted")
-                        .HasColumnType("boolean")
-                        .HasColumnName("is_completed");
-
                     b.Property<short>("Priority")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("smallint")

@@ -1,22 +1,22 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using MediatR;
+using Microsoft.AspNetCore.Mvc;
 using Moq;
-using TaskManagementSystem.Controllers;
-using TaskManagementSystem.DTOs.Request;
-using TaskManagementSystem.DTOs.Response;
 using TaskManagementSystem.Enums;
-using TaskManagementSystem.Interfaces;
+using TaskManagementSystem.Features.Tasks;
+using TaskManagementSystem.Features.Shared.DTOs;
+using TaskManagementSystem.Features.Tasks.DTOs;
 
 namespace TaskManagementSystem.Tests.UnitTests.Controllers;
 
 public sealed class TasksControllerTests
 {
-    private readonly Mock<ITasksService> _tasksServiceMock;
+    private readonly Mock<IMediator> _mediatorMock;
     private readonly TasksController _tasksController;
 
     public TasksControllerTests()
     {
-        _tasksServiceMock = new Mock<ITasksService>();
-        _tasksController = new TasksController(_tasksServiceMock.Object);
+        _mediatorMock = new Mock<IMediator>();
+        _tasksController = new TasksController(_mediatorMock.Object);
     }
 
     #region CreateTask
@@ -43,7 +43,7 @@ public sealed class TasksControllerTests
             CategoryId = taskForCreate.CategoryId
         };
 
-        _tasksServiceMock.Setup(service => service.CreateTaskAsync(taskForCreate))
+        _mediatorMock.Setup(m => m.Send(It.IsAny<CreateTaskCommand>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(expectedTask);
 
         // Act
@@ -53,7 +53,7 @@ public sealed class TasksControllerTests
         var okResult = Assert.IsType<OkObjectResult>(result.Result);
         Assert.Equal(expectedTask, okResult.Value);
 
-        _tasksServiceMock.Verify(services => services.CreateTaskAsync(taskForCreate), Times.Once);
+        _mediatorMock.Verify(m => m.Send(It.IsAny<CreateTaskCommand>(), It.IsAny<CancellationToken>()), Times.Once);
     }
 
     #endregion
@@ -76,7 +76,7 @@ public sealed class TasksControllerTests
             IsAscending = true
         };
 
-        _tasksServiceMock.Setup(service => service.GetAllTasksAsync(sortByInstructions))
+        _mediatorMock.Setup(m => m.Send(It.IsAny<GetAllTasksQuery>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(expectedResponse);
 
         // Act
@@ -86,7 +86,7 @@ public sealed class TasksControllerTests
         var okResult = Assert.IsType<OkObjectResult>(result.Result);
         Assert.Equal(expectedResponse, okResult.Value);
 
-        _tasksServiceMock.Verify(services => services.GetAllTasksAsync(sortByInstructions), Times.Once);
+        _mediatorMock.Verify(m => m.Send(It.IsAny<GetAllTasksQuery>(), It.IsAny<CancellationToken>()), Times.Once);
     }
 
     #endregion
@@ -103,7 +103,7 @@ public sealed class TasksControllerTests
             Title = "1",
         };
 
-        _tasksServiceMock.Setup(service => service.GetTaskByIdAsync(taskId))
+        _mediatorMock.Setup(m => m.Send(It.IsAny<GetTaskByIdQuery>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(expectedTask);
 
         // Act
@@ -113,7 +113,7 @@ public sealed class TasksControllerTests
         var okResult = Assert.IsType<OkObjectResult>(result.Result);
         Assert.Equal(expectedTask, okResult.Value);
 
-        _tasksServiceMock.Verify(services => services.GetTaskByIdAsync(taskId), Times.Once);
+        _mediatorMock.Verify(m => m.Send(It.IsAny<GetTaskByIdQuery>(), It.IsAny<CancellationToken>()), Times.Once);
     }
 
     #endregion
@@ -138,7 +138,7 @@ public sealed class TasksControllerTests
             Status = taskForUpdate.Status
         };
 
-        _tasksServiceMock.Setup(service => service.UpdateTaskAsync(taskId, taskForUpdate))
+        _mediatorMock.Setup(m => m.Send(It.IsAny<UpdateTaskCommand>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(expectedTask);
 
         // Act
@@ -148,7 +148,7 @@ public sealed class TasksControllerTests
         var okResult = Assert.IsType<OkObjectResult>(result.Result);
         Assert.Equal(expectedTask, okResult.Value);
 
-        _tasksServiceMock.Verify(services => services.UpdateTaskAsync(taskId, taskForUpdate), Times.Once);
+        _mediatorMock.Verify(m => m.Send(It.IsAny<UpdateTaskCommand>(), It.IsAny<CancellationToken>()), Times.Once);
     }
 
     #endregion
@@ -166,14 +166,13 @@ public sealed class TasksControllerTests
             Status = Status.InProgress
         };
 
-
         // Act
         var result = await _tasksController.UnlockTask(taskId, unlockDto);
 
         // Assert
         var okResult = Assert.IsType<NoContentResult>(result);
 
-        _tasksServiceMock.Verify(services => services.UnlockTaskAsync(taskId, unlockDto), Times.Once);
+        _mediatorMock.Verify(m => m.Send(It.IsAny<UnlockTaskCommand>(), It.IsAny<CancellationToken>()), Times.Once);
     }
 
     #endregion
@@ -187,17 +186,17 @@ public sealed class TasksControllerTests
         var taskId = 1;
         var expectedDeleteAction = DeleteAction.Locked;
 
-        _tasksServiceMock.Setup(service => service.DeleteTaskAsync(taskId))
+        _mediatorMock.Setup(m => m.Send(It.IsAny<DeleteTaskCommand>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(expectedDeleteAction);
 
         // Act
         var result = await _tasksController.DeleteTask(taskId);
 
         // Assert
-        var okResult = Assert.IsType<OkObjectResult>(result);
+        var okResult = Assert.IsType<OkObjectResult>(result.Result);
         Assert.Equal(expectedDeleteAction, okResult.Value);
 
-        _tasksServiceMock.Verify(services => services.DeleteTaskAsync(taskId), Times.Once);
+        _mediatorMock.Verify(m => m.Send(It.IsAny<DeleteTaskCommand>(), It.IsAny<CancellationToken>()), Times.Once);
     }
 
     #endregion

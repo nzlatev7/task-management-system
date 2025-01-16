@@ -25,10 +25,7 @@ public class TaskEntity
     [Column("priority")]
     public Priority Priority { get; set; } = Priority.Medium;
 
-    [Column("is_completed")]
-    public bool IsCompleted { get; set; }
-
-    [Column("status")]
+    [Column("status")] 
     public Status Status { get; set; }
 
     [Column("category_id")]

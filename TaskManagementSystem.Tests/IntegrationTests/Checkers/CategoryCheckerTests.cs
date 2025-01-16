@@ -1,6 +1,5 @@
 ﻿using TaskManagementSystem.Checkers;
 using TaskManagementSystem.Database;
-using TaskManagementSystem.Interfaces;
 using TaskManagementSystem.Tests.Fixtures;
 using TaskManagementSystem.Tests.TestUtilities;
 

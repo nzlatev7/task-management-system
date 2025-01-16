@@ -1,12 +1,12 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using TaskManagementSystem.Database;
-using TaskManagementSystem.ExceptionHandlers;
 using TaskManagementSystem.Exceptions;
-using TaskManagementSystem.TaskDeleteStategy;
-using TaskManagementSystem.Interfaces;
-using TaskManagementSystem.LoggingDecorators;
+using TaskManagementSystem.ExceptionHandlers;
 using TaskManagementSystem.Checkers;
-using TaskManagementSystem.Services;
+using TaskManagementSystem.Features.Tasks;
+using TaskManagementSystem.Features.Categories;
+using TaskManagementSystem.Features.Tasks.DeleteTask.Strategy;
+using TaskManagementSystem.Features.Tasks.DeleteTask.Interfaces;
 
 namespace TaskManagementSystem.Extensions;
 
@@ -31,13 +31,16 @@ public static class DependencyInjectionExtensions
 
     public static IServiceCollection AddApplication(this IServiceCollection services)
     {
-        services.AddScoped<ITasksService, TasksService>();
-        services.Decorate<ITasksService, TasksServiceLoggingDecorator>();
-
-        services.AddScoped<ICategoriesService, CategoriesSerivce>();
-        services.Decorate<ICategoriesService, CategoriesServiceLoggingDecorator>();
-
-        services.AddScoped<IReportsService, ReportsService>();
+        services.AddMediatR(c => {
+            c.RegisterServicesFromAssemblyContaining<Program>();
+            c.AddBehavior<CreateTaskLoggingHandler>();
+            c.AddBehavior<DeleteTaskLoggingHandler>();
+            c.AddBehavior<UpdateTaskLoggingHandler>();
+            c.AddBehavior<UnlockTaskLoggingHandler>();
+            c.AddBehavior<CreateCategoryLoggingHandler>();
+            c.AddBehavior<UpdateCategoryLoggingHandler>();
+            c.AddBehavior<DeleteCategoryLoggingHandler>();
+        });
 
         services.AddScoped<ITaskDeleteOrchestrator, TaskDeleteOrchestrator>();
         services.AddScoped<ITaskDeleteStrategy, TaskRemovingDeleteStrategy>();

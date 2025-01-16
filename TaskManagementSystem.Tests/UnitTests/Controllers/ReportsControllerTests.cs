@@ -1,22 +1,22 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using MediatR;
+using Microsoft.AspNetCore.Mvc;
 using Moq;
-using TaskManagementSystem.Controllers;
-using TaskManagementSystem.DTOs.Request;
-using TaskManagementSystem.DTOs.Response;
 using TaskManagementSystem.Enums;
-using TaskManagementSystem.Interfaces;
+using TaskManagementSystem.Features.Reports;
+using TaskManagementSystem.Features.Reports.DTOs;
+using TaskManagementSystem.Features.Shared.DTOs;
 
 namespace TaskManagementSystem.Tests.UnitTests.Controllers;
 
 public sealed class ReportsControllerTests
 {
-    private readonly Mock<IReportsService> _reportsServiceMock;
+    private readonly Mock<IMediator> _mediator;
     private readonly ReportsControllers _reportsControllers;
 
     public ReportsControllerTests()
     {
-        _reportsServiceMock = new Mock<IReportsService>();
-        _reportsControllers = new ReportsControllers(_reportsServiceMock.Object);
+        _mediator = new Mock<IMediator>();
+        _reportsControllers = new ReportsControllers(_mediator.Object);
     }
 
     #region GetReportForTasks
@@ -54,7 +54,8 @@ public sealed class ReportsControllerTests
             }
         };
 
-        _reportsServiceMock.Setup(service => service.GetReportForTasksAsync(requestDto)).ReturnsAsync(expectedResponse);
+        _mediator.Setup(m => m.Send(It.IsAny<GetReportForTasksQuery>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(expectedResponse);
 
         // Act
         var result = await _reportsControllers.GetReportForTasks(requestDto);
@@ -62,7 +63,8 @@ public sealed class ReportsControllerTests
         // Assert
         var okResult = Assert.IsType<OkObjectResult>(result.Result);
         Assert.Equal(expectedResponse, okResult.Value);
-        _reportsServiceMock.Verify(services => services.GetReportForTasksAsync(requestDto), Times.Once);
+
+        _mediator.Verify(m => m.Send(It.IsAny<GetReportForTasksQuery>(), It.IsAny<CancellationToken>()), Times.Once);
     }
 
     #endregion
