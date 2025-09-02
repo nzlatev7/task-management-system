@@ -13,6 +13,7 @@ public static class DtoMappingExtensions
             Title = taskEntity.Title,
             Description = taskEntity.Description,
             Priority = taskEntity.Priority,
+            Severity = taskEntity.Severity,
             DueDate = taskEntity.DueDate,
             IsCompleted = taskEntity.IsCompleted,
             Status = taskEntity.Status,

@@ -31,6 +31,7 @@ public sealed class TasksControllerTests
             DueDate = DateTime.UtcNow.AddDays(2),
             Description = "test",
             Priority = Priority.Low,
+            Severity = 3,
             CategoryId = 1
         };
 
@@ -40,6 +41,7 @@ public sealed class TasksControllerTests
             DueDate = taskForCreate.DueDate,
             Description = taskForCreate.Description,
             Priority = taskForCreate.Priority.Value,
+            Severity = taskForCreate.Severity,
             CategoryId = taskForCreate.CategoryId
         };
 
@@ -53,6 +55,39 @@ public sealed class TasksControllerTests
         var okResult = Assert.IsType<OkObjectResult>(result.Result);
         Assert.Equal(expectedTask, okResult.Value);
 
+        _tasksServiceMock.Verify(services => services.CreateTaskAsync(taskForCreate), Times.Once);
+    }
+
+    [Fact]
+    public async Task CreateTask_WithoutSeverity_ReturnsOkResultWithNullSeverity()
+    {
+        // Arrange
+        var taskForCreate = new CreateTaskRequestDto
+        {
+            Title = "test",
+            DueDate = DateTime.UtcNow.AddDays(2),
+            Description = "test",
+            CategoryId = 1
+        };
+
+        var expectedTask = new TaskResponseDto()
+        {
+            Title = taskForCreate.Title,
+            DueDate = taskForCreate.DueDate,
+            Description = taskForCreate.Description,
+            CategoryId = taskForCreate.CategoryId,
+            Severity = null
+        };
+
+        _tasksServiceMock.Setup(service => service.CreateTaskAsync(taskForCreate))
+            .ReturnsAsync(expectedTask);
+
+        // Act
+        var result = await _tasksController.CreateTask(taskForCreate);
+
+        // Assert
+        var okResult = Assert.IsType<OkObjectResult>(result.Result);
+        Assert.Equal(expectedTask, okResult.Value);
         _tasksServiceMock.Verify(services => services.CreateTaskAsync(taskForCreate), Times.Once);
     }
 
