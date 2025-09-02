@@ -13,10 +13,12 @@ public static class DtoMappingExtensions
             Title = taskEntity.Title,
             Description = taskEntity.Description,
             Priority = taskEntity.Priority,
+            StoryPoints = taskEntity.StoryPoints,
             DueDate = taskEntity.DueDate,
             IsCompleted = taskEntity.IsCompleted,
             Status = taskEntity.Status,
-            CategoryId = taskEntity.CategoryId
+            CategoryId = taskEntity.CategoryId,
+            Kind = taskEntity.Kind
         };
 
         return result;

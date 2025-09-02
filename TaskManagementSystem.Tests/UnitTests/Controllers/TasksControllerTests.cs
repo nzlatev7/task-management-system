@@ -31,7 +31,9 @@ public sealed class TasksControllerTests
             DueDate = DateTime.UtcNow.AddDays(2),
             Description = "test",
             Priority = Priority.Low,
-            CategoryId = 1
+            CategoryId = 1,
+            Kind = TaskKind.Feature,
+            StoryPoints = 5
         };
 
         var expectedTask = new TaskResponseDto()
@@ -40,7 +42,9 @@ public sealed class TasksControllerTests
             DueDate = taskForCreate.DueDate,
             Description = taskForCreate.Description,
             Priority = taskForCreate.Priority.Value,
-            CategoryId = taskForCreate.CategoryId
+            CategoryId = taskForCreate.CategoryId,
+            StoryPoints = taskForCreate.StoryPoints,
+            Kind = TaskKind.Feature
         };
 
         _tasksServiceMock.Setup(service => service.CreateTaskAsync(taskForCreate))
