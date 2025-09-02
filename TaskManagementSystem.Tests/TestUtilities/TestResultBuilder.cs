@@ -9,13 +9,13 @@ namespace TaskManagementSystem.Tests.TestUtilities;
 public static class TestResultBuilder
 {
     public static TaskResponseDto GetExpectedTask(TaskEntity task)
-        => CreateBaseTaskResponse(task.Id, task.Title, task.Description, task.DueDate, task.Priority, task.IsCompleted, task.Status, task.CategoryId);
+        => CreateBaseTaskResponse(task.Id, task.Title, task.Description, task.DueDate, task.Priority, task.Severity, task.IsCompleted, task.Status, task.CategoryId);
 
     public static TaskResponseDto GetExpectedTask(int taskId, CreateTaskRequestDto task)
-        => CreateBaseTaskResponse(taskId, task.Title, task.Description, task.DueDate, task.Priority, isCompleted: false, Status.Pending, task.CategoryId);
+        => CreateBaseTaskResponse(taskId, task.Title, task.Description, task.DueDate, task.Priority, task.Severity, isCompleted: false, Status.Pending, task.CategoryId);
 
     public static TaskResponseDto GetExpectedTask(int taskId, UpdateTaskRequestDto task)
-        => CreateBaseTaskResponse(taskId, task.Title, task.Description, task.DueDate, task.Priority, isCompleted: false, task.Status, task.CategoryId);
+        => CreateBaseTaskResponse(taskId, task.Title, task.Description, task.DueDate, task.Priority, severity: null, isCompleted: false, task.Status, task.CategoryId);
 
     public static List<TaskResponseDto> GetExpectedTasks(List<TaskEntity> tasks)
     {
@@ -131,6 +131,7 @@ public static class TestResultBuilder
         string? description,
         DateTime dueDate,
         Priority? priority,
+        int? severity,
         bool isCompleted,
         Status status,
         int categoryId)
@@ -142,6 +143,7 @@ public static class TestResultBuilder
             Description = description,
             DueDate = dueDate,
             Priority = priority ?? Priority.Medium,
+            Severity = severity,
             IsCompleted = isCompleted,
             Status = status,
             CategoryId = categoryId

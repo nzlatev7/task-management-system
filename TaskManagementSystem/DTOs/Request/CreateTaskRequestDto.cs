@@ -23,6 +23,8 @@ public class CreateTaskRequestDto
     [JsonConverter(typeof(JsonStringEnumConverter))]
     public Priority? Priority { get; set; }
 
+    public int? Severity { get; set; }
+
     [Range(1, int.MaxValue)]
     public int CategoryId { get; set; }
 }

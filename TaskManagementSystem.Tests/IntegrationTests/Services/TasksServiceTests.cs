@@ -62,6 +62,7 @@ public sealed class TasksServiceTests : IClassFixture<TestDatabaseFixture>, IAsy
             Description = "Task description",
             DueDate = DateTime.UtcNow.AddDays(1),
             Priority = Priority.Low,
+            Severity = 5,
             CategoryId = _targetCategoryId
         };
 
@@ -74,6 +75,7 @@ public sealed class TasksServiceTests : IClassFixture<TestDatabaseFixture>, IAsy
         // Assert
         var expectedTask = TestResultBuilder.GetExpectedTask(resultTask.Id, taskDto);
         Assert.Equivalent(expectedTask, resultTask, strict: true);
+        Assert.Equal(taskDto.Severity, resultTask.Severity);
 
         var count = await _dbContext.Tasks.CountAsync();
         Assert.Equal(expected: 1, count);
@@ -83,6 +85,7 @@ public sealed class TasksServiceTests : IClassFixture<TestDatabaseFixture>, IAsy
 
         Assert.NotNull(savedTask);
         Assert.Equivalent(expectedTask, savedTask);
+        Assert.Equal(taskDto.Severity, savedTask!.Severity);
 
         _categoryCheckerMock.VerifyCategoryExistsCall();
     }
@@ -126,6 +129,7 @@ public sealed class TasksServiceTests : IClassFixture<TestDatabaseFixture>, IAsy
         // Assert
         var defaultPriority = Priority.Medium;
         Assert.Equal(defaultPriority, resultTask.Priority);
+        Assert.Null(resultTask.Severity);
     }
 
     #endregion

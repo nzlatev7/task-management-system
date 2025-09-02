@@ -16,6 +16,9 @@ public sealed class TaskResponseDto
     [JsonConverter(typeof(JsonStringEnumConverter))]
     public Priority Priority { get; set; }
 
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public int? Severity { get; set; }
+
     public bool IsCompleted { get; set; }
 
     [JsonConverter(typeof(JsonStringEnumConverter))]

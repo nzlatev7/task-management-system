@@ -51,6 +51,7 @@ public sealed class TasksService : ITasksService
                 Description = x.Description,
                 DueDate = x.DueDate,
                 Priority = x.Priority,
+                Severity = x.Severity,
                 IsCompleted = x.IsCompleted,
                 Status = x.Status,
                 CategoryId = x.CategoryId

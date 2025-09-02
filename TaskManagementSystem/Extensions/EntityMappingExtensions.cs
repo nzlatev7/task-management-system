@@ -30,7 +30,8 @@ public static class EntityMappingExtensions
             DueDate = taskDto.DueDate,
             IsCompleted = false,
             Status = Status.Pending,
-            CategoryId = taskDto.CategoryId
+            CategoryId = taskDto.CategoryId,
+            Severity = taskDto.Severity
         };
 
         if (taskDto.Priority.HasValue)
