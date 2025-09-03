@@ -11,6 +11,9 @@ public class TaskEntity
     [Column("id")]
     public int Id { get; set; }
 
+    [Column("kind")]
+    public TaskKind Kind { get; set; } = TaskKind.Feature;
+
     [Column("title")]
     [MaxLength(EntityFiledConstants.TitleMaxLength)]
     public required string Title { get; set; }
@@ -24,6 +27,9 @@ public class TaskEntity
 
     [Column("priority")]
     public Priority Priority { get; set; } = Priority.Medium;
+
+    [Column("story_points")]
+    public int? StoryPoints { get; set; }
 
     [Column("is_completed")]
     public bool IsCompleted { get; set; }

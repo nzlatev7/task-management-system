@@ -30,11 +30,15 @@ public static class EntityMappingExtensions
             DueDate = taskDto.DueDate,
             IsCompleted = false,
             Status = Status.Pending,
-            CategoryId = taskDto.CategoryId
+            CategoryId = taskDto.CategoryId,
+            Kind = taskDto.Kind
         };
 
         if (taskDto.Priority.HasValue)
             taskEntity.Priority = taskDto.Priority.Value;
+
+        if (taskDto.StoryPoints.HasValue)
+            taskEntity.StoryPoints = taskDto.StoryPoints.Value;
 
         return taskEntity;
     }

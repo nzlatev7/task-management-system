@@ -31,7 +31,7 @@ public static class DependencyInjectionExtensions
 
     public static IServiceCollection AddApplication(this IServiceCollection services)
     {
-        services.AddScoped<ITasksService, TasksService>();
+        services.AddScoped<ITasksService, ScrumTasksService>();
         services.Decorate<ITasksService, TasksServiceLoggingDecorator>();
 
         services.AddScoped<ICategoriesService, CategoriesSerivce>();

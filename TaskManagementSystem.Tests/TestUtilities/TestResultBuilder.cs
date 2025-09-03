@@ -9,13 +9,13 @@ namespace TaskManagementSystem.Tests.TestUtilities;
 public static class TestResultBuilder
 {
     public static TaskResponseDto GetExpectedTask(TaskEntity task)
-        => CreateBaseTaskResponse(task.Id, task.Title, task.Description, task.DueDate, task.Priority, task.IsCompleted, task.Status, task.CategoryId);
+        => CreateBaseTaskResponse(task.Id, task.Title, task.Description, task.DueDate, task.Priority, task.StoryPoints, task.IsCompleted, task.Status, task.CategoryId, task.Kind);
 
     public static TaskResponseDto GetExpectedTask(int taskId, CreateTaskRequestDto task)
-        => CreateBaseTaskResponse(taskId, task.Title, task.Description, task.DueDate, task.Priority, isCompleted: false, Status.Pending, task.CategoryId);
+        => CreateBaseTaskResponse(taskId, task.Title, task.Description, task.DueDate, task.Priority, task.StoryPoints, isCompleted: false, Status.Pending, task.CategoryId, task.Kind);
 
     public static TaskResponseDto GetExpectedTask(int taskId, UpdateTaskRequestDto task)
-        => CreateBaseTaskResponse(taskId, task.Title, task.Description, task.DueDate, task.Priority, isCompleted: false, task.Status, task.CategoryId);
+        => CreateBaseTaskResponse(taskId, task.Title, task.Description, task.DueDate, task.Priority, storyPoints: null, isCompleted: false, task.Status, task.CategoryId, TaskKind.Feature);
 
     public static List<TaskResponseDto> GetExpectedTasks(List<TaskEntity> tasks)
     {
@@ -131,9 +131,11 @@ public static class TestResultBuilder
         string? description,
         DateTime dueDate,
         Priority? priority,
+        int? storyPoints,
         bool isCompleted,
         Status status,
-        int categoryId)
+        int categoryId,
+        TaskKind kind)
     {
         return new TaskResponseDto()
         {
@@ -142,9 +144,11 @@ public static class TestResultBuilder
             Description = description,
             DueDate = dueDate,
             Priority = priority ?? Priority.Medium,
+            StoryPoints = storyPoints,
             IsCompleted = isCompleted,
             Status = status,
-            CategoryId = categoryId
+            CategoryId = categoryId,
+            Kind = kind
         };
     }
 
