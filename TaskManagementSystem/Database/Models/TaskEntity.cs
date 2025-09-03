@@ -11,6 +11,9 @@ public class TaskEntity
     [Column("id")]
     public int Id { get; set; }
 
+    [Column("kind")]
+    public TaskKind Kind { get; set; }
+
     [Column("title")]
     [MaxLength(EntityFiledConstants.TitleMaxLength)]
     public required string Title { get; set; }
@@ -22,6 +25,9 @@ public class TaskEntity
     [Column("due_date")]
     public DateTime DueDate { get; set; }
 
+    [Column("task_kind")]
+    public TaskKind TaskKind { get; set; }
+
     [Column("priority")]
     public Priority Priority { get; set; } = Priority.Medium;
 
@@ -30,6 +36,9 @@ public class TaskEntity
 
     [Column("status")]
     public Status Status { get; set; }
+
+    [Column("story_points")]
+    public int? StoryPoints { get; set; }
 
     [Column("category_id")]
     public int CategoryId { get; set; }

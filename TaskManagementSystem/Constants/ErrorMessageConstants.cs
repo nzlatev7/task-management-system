@@ -14,7 +14,7 @@ public static class ErrorMessageConstants
     public const string LockedTaskWithIdDoesNotExist = "Locked Task with this id does not exist";
     public const string AssociatedTasksToCategory = "There are associated tasks to this category. In order to delete the Category, you need to remove all tasks that are connected to it.";
     public const string CategoryWithoutTasks = "In order to get the Completion Status, you need to have at least one Task which is not Archived";
-    
+
     public const string TaskPriorityMustRepresentValidValues = $"The field {nameof(TaskEntity.Priority)} must have a value between 0 and 2 inclusive, representing 'Low', 'Medium', 'High'. You can also initialize it using these string values ('Low', 'Medium', 'High'). If no {nameof(TaskEntity.Priority)} is specified, the default value is 'Medium'.";
     public const string UnlockTaskStatusMustRepresentValidValues = $"The filed {nameof(TaskEntity.Status)} must be a value between 1 and 3 inclusive, representing 'InProgress', 'Completed', 'Archived'. You can also use these string values ('InProgress', 'Completed', 'Archived').";
     public const string UpdateTaskStatusMustRepresentValidValues = $"The filed {nameof(TaskEntity.Status)} must be a value between 0 and 2 inclusive, representing 'Pending', 'InProgress', 'Completed'. You can also use these string values ('Pending', 'InProgress', 'Completed').";
@@ -28,4 +28,7 @@ public static class ErrorMessageConstants
 
     public const string DbContextNotInitialized = "DbContext is not initialized.";
     public const string NoStrategyFound = "No strategy found";
+
+    public const string StoryPointsMustRepresentValidValues = "StoryPoints must be a positive number.";
+    public const string SeverityMustRepresentValidValues = "Severity must be between 1 and 5.";
 }

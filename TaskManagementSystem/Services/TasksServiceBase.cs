@@ -1,38 +1,46 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using TaskManagementSystem.Constants;
-using TaskManagementSystem.Database.Models;
 using TaskManagementSystem.Database;
+using TaskManagementSystem.Database.Models;
 using TaskManagementSystem.DTOs.Request;
 using TaskManagementSystem.DTOs.Response;
+using TaskManagementSystem.Enums;
 using TaskManagementSystem.Exceptions;
+using TaskManagementSystem.Extensions;
 using TaskManagementSystem.Helpers;
 using TaskManagementSystem.Interfaces;
-using TaskManagementSystem.Enums;
-using TaskManagementSystem.Extensions;
+using TaskManagementSystem.Workflows;
 
 namespace TaskManagementSystem.Services;
 
-public sealed class TasksService : ITasksService
+public abstract class TasksServiceBase : ITasksService
 {
+    protected abstract ITaskWorkflow CreateWorkflow(TaskKind kind);
+
     private readonly TaskManagementSystemDbContext _dbContext;
     private readonly ICategoryChecker _categoryChecker;
     private readonly ITaskDeleteOrchestrator _taskDeleteOrchestrator;
-    
-    public TasksService(
+
+    public TasksServiceBase(
         TaskManagementSystemDbContext dbContext,
         ICategoryChecker categoryChecker,
         ITaskDeleteOrchestrator taskDeleteOrchestrator)
     {
-        _dbContext = dbContext; 
+        _dbContext = dbContext;
         _categoryChecker = categoryChecker;
         _taskDeleteOrchestrator = taskDeleteOrchestrator;
     }
 
     public async Task<TaskResponseDto> CreateTaskAsync(CreateTaskRequestDto taskDto)
     {
-        await ValidatateCategoryAsync(taskDto.CategoryId);
+        await ValidateCategoryAsync(taskDto.CategoryId);
 
-        var taskEntity = taskDto.ToTaskEntityForCreate();
+
+        var workflow = CreateWorkflow(taskDto.Kind);
+        workflow.Validate(taskDto);
+
+
+        var taskEntity = workflow.Build(taskDto);
 
         await _dbContext.Tasks.AddAsync(taskEntity);
         await _dbContext.SaveChangesAsync();
@@ -73,7 +81,7 @@ public sealed class TasksService : ITasksService
             ?? throw new NotFoundException(ErrorMessageConstants.TaskDoesNotExist);
 
         ValidateTaskStatusForUpdateAsync(taskEntity, taskDto);
-        await ValidatateCategoryAsync(taskDto.CategoryId);
+        await ValidateCategoryAsync(taskDto.CategoryId);
 
         taskDto.UpdateTaskEntity(taskEntity);
 
@@ -87,7 +95,7 @@ public sealed class TasksService : ITasksService
         var updatedRows = await _dbContext.Tasks
             .Where(x => x.Id == taskId && x.Status == Status.Locked)
             .ExecuteUpdateAsync(x => x.SetProperty(x => x.Status, unlockDto.Status));
-	
+
         if (updatedRows is 0)
             throw new NotFoundException(ErrorMessageConstants.LockedTaskWithIdDoesNotExist);
     }
@@ -104,7 +112,7 @@ public sealed class TasksService : ITasksService
         return deleteAction;
     }
 
-    private async Task ValidatateCategoryAsync(int categoryId)
+    private async Task ValidateCategoryAsync(int categoryId)
     {
         var categoryExists = await _categoryChecker.CategoryExistsAsync(categoryId);
 

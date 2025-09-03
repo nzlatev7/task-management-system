@@ -21,24 +21,6 @@ public static class EntityMappingExtensions
         category.Description = categoryDto.Description;
     }
 
-    public static TaskEntity ToTaskEntityForCreate(this CreateTaskRequestDto taskDto)
-    {
-        var taskEntity = new TaskEntity()
-        {
-            Title = taskDto.Title,
-            Description = taskDto.Description,
-            DueDate = taskDto.DueDate,
-            IsCompleted = false,
-            Status = Status.Pending,
-            CategoryId = taskDto.CategoryId
-        };
-
-        if (taskDto.Priority.HasValue)
-            taskEntity.Priority = taskDto.Priority.Value;
-
-        return taskEntity;
-    }
-
     public static void UpdateTaskEntity(this UpdateTaskRequestDto taskDto, TaskEntity currentTask)
     {
         currentTask.Title = taskDto.Title;

@@ -1,12 +1,12 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using TaskManagementSystem.Checkers;
 using TaskManagementSystem.Database;
 using TaskManagementSystem.ExceptionHandlers;
 using TaskManagementSystem.Exceptions;
-using TaskManagementSystem.TaskDeleteStategy;
 using TaskManagementSystem.Interfaces;
 using TaskManagementSystem.LoggingDecorators;
-using TaskManagementSystem.Checkers;
 using TaskManagementSystem.Services;
+using TaskManagementSystem.TaskDeleteStategy;
 
 namespace TaskManagementSystem.Extensions;
 
@@ -31,7 +31,7 @@ public static class DependencyInjectionExtensions
 
     public static IServiceCollection AddApplication(this IServiceCollection services)
     {
-        services.AddScoped<ITasksService, TasksService>();
+        services.AddScoped<ITasksService, ScrumTasksService>();
         services.Decorate<ITasksService, TasksServiceLoggingDecorator>();
 
         services.AddScoped<ICategoriesService, CategoriesSerivce>();

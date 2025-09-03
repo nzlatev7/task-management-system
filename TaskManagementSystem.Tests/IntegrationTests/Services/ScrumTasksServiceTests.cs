@@ -14,7 +14,7 @@ using TaskManagementSystem.Tests.TestUtilities;
 
 namespace TaskManagementSystem.Tests.IntegrationTests.Services;
 
-public sealed class TasksServiceTests : IClassFixture<TestDatabaseFixture>, IAsyncLifetime
+public sealed class ScrumTasksServiceTests : IClassFixture<TestDatabaseFixture>, IAsyncLifetime
 {
     private readonly TaskManagementSystemDbContext _dbContext;
     private readonly TestDataManager _dataGenerator;
@@ -27,7 +27,7 @@ public sealed class TasksServiceTests : IClassFixture<TestDatabaseFixture>, IAsy
     private int _targetCategoryId;
     private int[] _categoryIds = new int[0];
 
-    public TasksServiceTests(TestDatabaseFixture fixture)
+    public ScrumTasksServiceTests(TestDatabaseFixture fixture)
     {
         _dbContext = fixture.DbContext;
         _dataGenerator = new TestDataManager(_dbContext);
@@ -35,7 +35,7 @@ public sealed class TasksServiceTests : IClassFixture<TestDatabaseFixture>, IAsy
         _taskDeleteOrchestrator = new Mock<ITaskDeleteOrchestrator>();
         _categoryCheckerMock = new Mock<ICategoryChecker>();
 
-        _tasksService = new TasksService(_dbContext, _categoryCheckerMock.Object, _taskDeleteOrchestrator.Object);
+        _tasksService = new ScrumTasksService(_dbContext, _categoryCheckerMock.Object, _taskDeleteOrchestrator.Object);
     }
 
     public async Task InitializeAsync()
@@ -62,7 +62,9 @@ public sealed class TasksServiceTests : IClassFixture<TestDatabaseFixture>, IAsy
             Description = "Task description",
             DueDate = DateTime.UtcNow.AddDays(1),
             Priority = Priority.Low,
-            CategoryId = _targetCategoryId
+            CategoryId = _targetCategoryId,
+            Kind = TaskKind.Feature,
+            StoryPoints = 3
         };
 
         _categoryCheckerMock.Setup(c => c.CategoryExistsAsync(taskDto.CategoryId))
@@ -94,7 +96,9 @@ public sealed class TasksServiceTests : IClassFixture<TestDatabaseFixture>, IAsy
         var taskDto = new CreateTaskRequestDto
         {
             Title = "New Task",
-            CategoryId = 10000
+            CategoryId = 10000,
+            Kind = TaskKind.Feature,
+            StoryPoints = 3
         };
 
         _categoryCheckerMock.Setup(c => c.CategoryExistsAsync(taskDto.CategoryId))
@@ -114,7 +118,9 @@ public sealed class TasksServiceTests : IClassFixture<TestDatabaseFixture>, IAsy
         var taskDto = new CreateTaskRequestDto
         {
             Title = "New Task",
-            CategoryId = _targetCategoryId
+            CategoryId = _targetCategoryId,
+            Kind = TaskKind.Feature,
+            StoryPoints = 3
         };
 
         _categoryCheckerMock.Setup(c => c.CategoryExistsAsync(taskDto.CategoryId))
@@ -126,6 +132,29 @@ public sealed class TasksServiceTests : IClassFixture<TestDatabaseFixture>, IAsy
         // Assert
         var defaultPriority = Priority.Medium;
         Assert.Equal(defaultPriority, resultTask.Priority);
+    }
+
+    [Fact]
+    public async Task CreateTaskAsync_BugTask_DoesNotExposeStoryPoints()
+    {
+        // Arrange
+        var taskDto = new CreateTaskRequestDto
+        {
+            Title = "Bug Task",
+            CategoryId = _targetCategoryId,
+            Kind = TaskKind.Bug,
+            Severity = 5
+        };
+
+        _categoryCheckerMock.Setup(c => c.CategoryExistsAsync(taskDto.CategoryId))
+            .ReturnsAsync(true);
+
+        // Act
+        var resultTask = await _tasksService.CreateTaskAsync(taskDto);
+
+        // Assert
+        Assert.Equal(TaskKind.Bug, resultTask.Kind);
+        Assert.Null(resultTask.StoryPoints);
     }
 
     #endregion
