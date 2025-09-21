@@ -122,6 +122,8 @@ Developed a compact API for a **Task Management System** focused on **Categories
   - Specific Log operation for each action
 
 ### Applied Design Patterns
+- Creational
+   - Factory method (example: **`TasksServiceBase`**, **`ScrumTasksService`**)
 - Decorator - used for logging
 - Strategy - used for task deletion
 - Composite - removed
