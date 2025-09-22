@@ -1,4 +1,5 @@
 ﻿using Microsoft.Extensions.Logging;
+using System.Collections.Generic;
 using Moq;
 using TaskManagementSystem.Constants;
 using TaskManagementSystem.DTOs.Request;
@@ -97,6 +98,32 @@ public sealed class TasksServiceLoggingDecoratorTests
         Assert.Equal(expectedResponse, result);
 
         _tasksServiceMock.Verify(services => services.GetAllTasksAsync(sortByInstructions), Times.Once);
+    }
+
+    #endregion
+
+    #region GetBacklog
+
+    [Fact]
+    public async Task GetBacklogAsync_TaskKindProvided_DelegatesToInnerService()
+    {
+        // Arrange
+        var kind = TaskKind.Feature;
+        var expectedResponse = new List<TaskResponseDto>()
+        {
+            new TaskResponseDto() { Title = "1" },
+            new TaskResponseDto() { Title = "2" }
+        };
+
+        _tasksServiceMock.Setup(service => service.GetBacklogAsync(kind))
+            .ReturnsAsync(expectedResponse);
+
+        // Act
+        var result = await _tasksServiceLoggingDecorator.GetBacklogAsync(kind);
+
+        // Assert
+        Assert.Equal(expectedResponse, result);
+        _tasksServiceMock.Verify(services => services.GetBacklogAsync(kind), Times.Once);
     }
 
     #endregion

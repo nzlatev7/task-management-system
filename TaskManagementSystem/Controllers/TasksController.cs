@@ -35,6 +35,15 @@ public class TasksController : ControllerBase
     }
 
     [HttpGet]
+    [Route(RouteConstants.TaskBacklog)]
+    public async Task<ActionResult<IEnumerable<TaskResponseDto>>> GetBacklog([FromQuery] TaskKind kind)
+    {
+        var result = await _tasksService.GetBacklogAsync(kind);
+
+        return Ok(result);
+    }
+
+    [HttpGet]
     [Route(RouteConstants.TaskById)]
     public async Task<ActionResult<TaskResponseDto>> GetTaskById([FromRoute] int id)
     {

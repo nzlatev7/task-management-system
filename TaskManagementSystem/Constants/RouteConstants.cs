@@ -14,4 +14,5 @@ public class RouteConstants
 
     public const string Tasks = $"{Api}/tasks";
     public const string TaskById = $"{Api}/tasks/{IdParamName}";
+    public const string TaskBacklog = $"{Api}/tasks/backlog";
 }

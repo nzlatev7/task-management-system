@@ -1,4 +1,5 @@
 ﻿using Microsoft.AspNetCore.Http;
+using System.Linq;
 using Microsoft.EntityFrameworkCore;
 using Moq;
 using TaskManagementSystem.Constants;
@@ -9,6 +10,7 @@ using TaskManagementSystem.Enums;
 using TaskManagementSystem.Exceptions;
 using TaskManagementSystem.Interfaces;
 using TaskManagementSystem.Services;
+using TaskManagementSystem.Factories;
 using TaskManagementSystem.Tests.Fixtures;
 using TaskManagementSystem.Tests.TestUtilities;
 
@@ -38,7 +40,8 @@ public sealed class TasksServiceTests : IClassFixture<TestDatabaseFixture>, IAsy
         _tasksService = new ScrumTasksService(
             _dbContext,
             _categoryCheckerMock.Object,
-            _taskDeleteOrchestrator.Object);
+            _taskDeleteOrchestrator.Object,
+            new ScrumTaskArtifactsFactory());
     }
 
     public async Task InitializeAsync()
@@ -203,6 +206,243 @@ public sealed class TasksServiceTests : IClassFixture<TestDatabaseFixture>, IAsy
         .Cast<SortingTaskProperty>()
         .SelectMany(property => new[] { true, false }
             .Select(isAscending => new object[] { property, isAscending }));
+
+    #endregion
+
+    #region GetBacklog
+
+    [Fact]
+    public async Task GetBacklogAsync_FeatureTasks_ReturnsTasksOrderedByStoryPointsDueDateAndPriority()
+    {
+        // Arrange
+        var baseDueDate = new DateTime(2024, 1, 1, 0, 0, 0, DateTimeKind.Utc);
+
+        var backlogTasks = new List<TaskEntity>
+        {
+            new()
+            {
+                Title = "Feature Story 3",
+                Description = nameof(TaskEntity.Description),
+                DueDate = baseDueDate.AddDays(3),
+                Priority = Priority.Low,
+                StoryPoints = 3,
+                IsCompleted = false,
+                Status = Status.Pending,
+                CategoryId = _targetCategoryId,
+                Kind = TaskKind.Feature
+            },
+            new()
+            {
+                Title = "Feature Story 8",
+                Description = nameof(TaskEntity.Description),
+                DueDate = baseDueDate.AddDays(1),
+                Priority = Priority.High,
+                StoryPoints = 8,
+                IsCompleted = false,
+                Status = Status.InProgress,
+                CategoryId = _targetCategoryId,
+                Kind = TaskKind.Feature
+            },
+            new()
+            {
+                Title = "Feature No Story Points",
+                Description = nameof(TaskEntity.Description),
+                DueDate = baseDueDate.AddDays(2),
+                Priority = Priority.Medium,
+                StoryPoints = null,
+                IsCompleted = false,
+                Status = Status.Pending,
+                CategoryId = _targetCategoryId,
+                Kind = TaskKind.Feature
+            },
+            new()
+            {
+                Title = "Feature Completed",
+                Description = nameof(TaskEntity.Description),
+                DueDate = baseDueDate.AddDays(4),
+                Priority = Priority.Low,
+                StoryPoints = 1,
+                IsCompleted = true,
+                Status = Status.Completed,
+                CategoryId = _targetCategoryId,
+                Kind = TaskKind.Feature
+            },
+            new()
+            {
+                Title = "Feature Archived",
+                Description = nameof(TaskEntity.Description),
+                DueDate = baseDueDate.AddDays(5),
+                Priority = Priority.Medium,
+                StoryPoints = 2,
+                IsCompleted = false,
+                Status = Status.Archived,
+                CategoryId = _targetCategoryId,
+                Kind = TaskKind.Feature
+            }
+        };
+
+        await _dbContext.Tasks.AddRangeAsync(backlogTasks);
+        await _dbContext.SaveChangesAsync();
+
+        var expectedOrder = new List<TaskResponseDto>
+        {
+            TestResultBuilder.GetExpectedTask(backlogTasks[0]),
+            TestResultBuilder.GetExpectedTask(backlogTasks[1]),
+            TestResultBuilder.GetExpectedTask(backlogTasks[2])
+        };
+
+        // Act
+        var result = await _tasksService.GetBacklogAsync(TaskKind.Feature);
+        var backlog = result.ToList();
+
+        // Assert
+        Assert.Equal(expectedOrder.Count, backlog.Count);
+        Assert.Collection(backlog,
+            task => Assert.Equivalent(expectedOrder[0], task, strict: true),
+            task => Assert.Equivalent(expectedOrder[1], task, strict: true),
+            task => Assert.Equivalent(expectedOrder[2], task, strict: true));
+    }
+
+    [Fact]
+    public async Task GetBacklogAsync_BugTasks_ReturnsTasksOrderedByPriorityThenDueDate()
+    {
+        // Arrange
+        var baseDueDate = new DateTime(2024, 2, 1, 0, 0, 0, DateTimeKind.Utc);
+
+        var backlogTasks = new List<TaskEntity>
+        {
+            new()
+            {
+                Title = "Bug Low Priority",
+                Description = nameof(TaskEntity.Description),
+                DueDate = baseDueDate.AddDays(2),
+                Priority = Priority.Low,
+                IsCompleted = false,
+                Status = Status.Pending,
+                CategoryId = _targetCategoryId,
+                Kind = TaskKind.Bug
+            },
+            new()
+            {
+                Title = "Bug High Priority Later Due",
+                Description = nameof(TaskEntity.Description),
+                DueDate = baseDueDate.AddDays(3),
+                Priority = Priority.High,
+                IsCompleted = false,
+                Status = Status.Pending,
+                CategoryId = _targetCategoryId,
+                Kind = TaskKind.Bug
+            },
+            new()
+            {
+                Title = "Bug High Priority Earlier Due",
+                Description = nameof(TaskEntity.Description),
+                DueDate = baseDueDate.AddDays(1),
+                Priority = Priority.High,
+                IsCompleted = false,
+                Status = Status.Pending,
+                CategoryId = _targetCategoryId,
+                Kind = TaskKind.Bug
+            },
+            new()
+            {
+                Title = "Bug Completed",
+                Description = nameof(TaskEntity.Description),
+                DueDate = baseDueDate.AddDays(4),
+                Priority = Priority.Medium,
+                IsCompleted = true,
+                Status = Status.Completed,
+                CategoryId = _targetCategoryId,
+                Kind = TaskKind.Bug
+            }
+        };
+
+        await _dbContext.Tasks.AddRangeAsync(backlogTasks);
+        await _dbContext.SaveChangesAsync();
+
+        var expectedOrder = new List<TaskResponseDto>
+        {
+            TestResultBuilder.GetExpectedTask(backlogTasks[2]),
+            TestResultBuilder.GetExpectedTask(backlogTasks[1]),
+            TestResultBuilder.GetExpectedTask(backlogTasks[0])
+        };
+
+        // Act
+        var result = await _tasksService.GetBacklogAsync(TaskKind.Bug);
+        var backlog = result.ToList();
+
+        // Assert
+        Assert.Equal(expectedOrder.Count, backlog.Count);
+        Assert.Collection(backlog,
+            task => Assert.Equivalent(expectedOrder[0], task, strict: true),
+            task => Assert.Equivalent(expectedOrder[1], task, strict: true),
+            task => Assert.Equivalent(expectedOrder[2], task, strict: true));
+    }
+
+    [Fact]
+    public async Task GetBacklogAsync_IncidentTasks_ReturnsTasksOrderedByDueDateThenPriority()
+    {
+        // Arrange
+        var baseDueDate = new DateTime(2024, 3, 1, 0, 0, 0, DateTimeKind.Utc);
+
+        var backlogTasks = new List<TaskEntity>
+        {
+            new()
+            {
+                Title = "Incident Latest",
+                Description = nameof(TaskEntity.Description),
+                DueDate = baseDueDate.AddDays(5),
+                Priority = Priority.Low,
+                IsCompleted = false,
+                Status = Status.Pending,
+                CategoryId = _targetCategoryId,
+                Kind = TaskKind.Incident
+            },
+            new()
+            {
+                Title = "Incident Earliest",
+                Description = nameof(TaskEntity.Description),
+                DueDate = baseDueDate,
+                Priority = Priority.High,
+                IsCompleted = false,
+                Status = Status.Pending,
+                CategoryId = _targetCategoryId,
+                Kind = TaskKind.Incident
+            },
+            new()
+            {
+                Title = "Incident Middle",
+                Description = nameof(TaskEntity.Description),
+                DueDate = baseDueDate.AddDays(2),
+                Priority = Priority.Medium,
+                IsCompleted = false,
+                Status = Status.Pending,
+                CategoryId = _targetCategoryId,
+                Kind = TaskKind.Incident
+            }
+        };
+
+        await _dbContext.Tasks.AddRangeAsync(backlogTasks);
+        await _dbContext.SaveChangesAsync();
+
+        var expectedOrder = new List<TaskResponseDto>
+        {
+            TestResultBuilder.GetExpectedTask(backlogTasks[1]),
+            TestResultBuilder.GetExpectedTask(backlogTasks[2]),
+            TestResultBuilder.GetExpectedTask(backlogTasks[0])
+        };
+
+        // Act
+        var result = await _tasksService.GetBacklogAsync(TaskKind.Incident);
+        var backlog = result.ToList();
+
+        // Assert
+        Assert.Equal(expectedOrder.Count, backlog.Count);
+        Assert.Collection(backlog,
+            task => Assert.Equivalent(expectedOrder[0], task, strict: true),
+            task => Assert.Equivalent(expectedOrder[1], task, strict: true),
+            task => Assert.Equivalent(expectedOrder[2], task, strict: true));
+    }
 
     #endregion
 

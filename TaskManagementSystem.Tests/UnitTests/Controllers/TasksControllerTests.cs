@@ -95,6 +95,34 @@ public sealed class TasksControllerTests
 
     #endregion
 
+    #region GetBacklog
+
+    [Fact]
+    public async Task GetBacklog_TaskKindProvided_ReturnsOkResultWithOrderedBacklog()
+    {
+        // Arrange
+        var kind = TaskKind.Feature;
+        var expectedResponse = new List<TaskResponseDto>()
+        {
+            new TaskResponseDto() { Title = "1" },
+            new TaskResponseDto() { Title = "2" }
+        };
+
+        _tasksServiceMock.Setup(service => service.GetBacklogAsync(kind))
+            .ReturnsAsync(expectedResponse);
+
+        // Act
+        var result = await _tasksController.GetBacklog(kind);
+
+        // Assert
+        var okResult = Assert.IsType<OkObjectResult>(result.Result);
+        Assert.Equal(expectedResponse, okResult.Value);
+
+        _tasksServiceMock.Verify(services => services.GetBacklogAsync(kind), Times.Once);
+    }
+
+    #endregion
+
     #region GetTaskById
 
     [Fact]
