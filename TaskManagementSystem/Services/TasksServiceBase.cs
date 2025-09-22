@@ -1,3 +1,4 @@
+using System.Linq;
 using Microsoft.EntityFrameworkCore;
 using TaskManagementSystem.Constants;
 using TaskManagementSystem.Database;
@@ -8,33 +9,33 @@ using TaskManagementSystem.Enums;
 using TaskManagementSystem.Exceptions;
 using TaskManagementSystem.Extensions;
 using TaskManagementSystem.Interfaces;
-using TaskManagementSystem.Workflows;
 
 namespace TaskManagementSystem.Services;
 
 public abstract class TasksServiceBase : ITasksService
 {
-    protected abstract ITaskWorkflow CreateWorkflow(TaskKind kind);
-
     private readonly TaskManagementSystemDbContext _dbContext;
     private readonly ICategoryChecker _categoryChecker;
     private readonly ITaskDeleteOrchestrator _taskDeleteOrchestrator;
+    private readonly ITaskArtifactsFactory _taskArtifactsFactory;
 
     protected TasksServiceBase(
         TaskManagementSystemDbContext dbContext,
         ICategoryChecker categoryChecker,
-        ITaskDeleteOrchestrator taskDeleteOrchestrator)
+        ITaskDeleteOrchestrator taskDeleteOrchestrator,
+        ITaskArtifactsFactory taskArtifactsFactory)
     {
         _dbContext = dbContext;
         _categoryChecker = categoryChecker;
         _taskDeleteOrchestrator = taskDeleteOrchestrator;
+        _taskArtifactsFactory = taskArtifactsFactory;
     }
 
     public async Task<TaskResponseDto> CreateTaskAsync(CreateTaskRequestDto taskDto)
     {
         await ValidatateCategoryAsync(taskDto.CategoryId);
 
-        var workflow = CreateWorkflow(taskDto.Kind);
+        var workflow = _taskArtifactsFactory.CreateWorkflow(taskDto.Kind);
         workflow.Validate(taskDto);
 
         var taskEntity = workflow.Build(taskDto);
@@ -63,6 +64,35 @@ public abstract class TasksServiceBase : ITasksService
             }).ToListAsync();
 
         return tasks;
+    }
+
+    public async Task<IEnumerable<TaskResponseDto>> GetBacklogAsync(TaskKind kind)
+    {
+        var backlogOrdering = _taskArtifactsFactory.CreateBacklogOrdering(kind);
+
+        var backlog = await _dbContext.Tasks
+            .Where(task =>
+                task.Kind == kind &&
+                task.Status != Status.Completed &&
+                task.Status != Status.Archived)
+            .Select(x => new TaskResponseDto
+            {
+                Id = x.Id,
+                Title = x.Title,
+                Description = x.Description,
+                DueDate = x.DueDate,
+                Priority = x.Priority,
+                StoryPoints = x.StoryPoints,
+                IsCompleted = x.IsCompleted,
+                Status = x.Status,
+                CategoryId = x.CategoryId,
+                Kind = x.Kind
+            })
+            .ToListAsync();
+
+        var orderedBacklog = backlogOrdering.Order(backlog).ToList();
+
+        return orderedBacklog;
     }
 
     public async Task<TaskResponseDto> GetTaskByIdAsync(int taskId)

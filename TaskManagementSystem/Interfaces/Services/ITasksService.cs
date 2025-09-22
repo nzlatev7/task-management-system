@@ -10,6 +10,8 @@ public interface ITasksService
 
     Task<IEnumerable<TaskResponseDto>> GetAllTasksAsync(GetAllTasksRequestDto sortBy);
 
+    Task<IEnumerable<TaskResponseDto>> GetBacklogAsync(TaskKind kind);
+
     Task<TaskResponseDto> GetTaskByIdAsync(int taskId);
 
     Task<TaskResponseDto> UpdateTaskAsync(int taskId, UpdateTaskRequestDto taskDto);

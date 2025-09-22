@@ -33,6 +33,11 @@ public class TasksServiceLoggingDecorator : ITasksService
         return await _wrappee.GetAllTasksAsync(sortBy);
     }
 
+    public async Task<IEnumerable<TaskResponseDto>> GetBacklogAsync(TaskKind kind)
+    {
+        return await _wrappee.GetBacklogAsync(kind);
+    }
+
     public async Task<TaskResponseDto> GetTaskByIdAsync(int taskId)
     {
         return await _wrappee.GetTaskByIdAsync(taskId);

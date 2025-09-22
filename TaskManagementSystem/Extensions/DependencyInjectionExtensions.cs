@@ -7,6 +7,7 @@ using TaskManagementSystem.Interfaces;
 using TaskManagementSystem.LoggingDecorators;
 using TaskManagementSystem.Checkers;
 using TaskManagementSystem.Services;
+using TaskManagementSystem.Factories;
 
 namespace TaskManagementSystem.Extensions;
 
@@ -33,6 +34,8 @@ public static class DependencyInjectionExtensions
     {
         services.AddScoped<ITasksService, ScrumTasksService>();
         services.Decorate<ITasksService, TasksServiceLoggingDecorator>();
+
+        services.AddScoped<ITaskArtifactsFactory, ScrumTaskArtifactsFactory>();
 
         services.AddScoped<ICategoriesService, CategoriesSerivce>();
         services.Decorate<ICategoriesService, CategoriesServiceLoggingDecorator>();
