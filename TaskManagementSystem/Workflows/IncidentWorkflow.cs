@@ -1,3 +1,4 @@
+using TaskManagementSystem.Builders;
 using TaskManagementSystem.DTOs.Request;
 using TaskManagementSystem.Database.Models;
 using TaskManagementSystem.Enums;
@@ -12,16 +13,14 @@ public sealed class IncidentWorkflow : ITaskWorkflow
     {
         var dueDate = dto.DueDate != default ? dto.DueDate : DateTime.UtcNow.AddHours(4);
 
-        return new TaskEntity
-        {
-            Title = dto.Title,
-            Description = dto.Description,
-            DueDate = dueDate,
-            Priority = Priority.High,
-            IsCompleted = false,
-            Status = Status.InProgress,
-            CategoryId = dto.CategoryId,
-            Kind = TaskKind.Incident
-        };
+        return TaskEntityBuilder.Create(
+                dto.Title,
+                dto.Description,
+                dueDate,
+                dto.CategoryId,
+                TaskKind.Incident)
+            .WithPriority(Priority.High)
+            .WithStatus(Status.InProgress)
+            .Build();
     }
 }

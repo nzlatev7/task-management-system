@@ -1,3 +1,4 @@
+using TaskManagementSystem.Builders;
 using TaskManagementSystem.DTOs.Request;
 using TaskManagementSystem.Database.Models;
 using TaskManagementSystem.Enums;
@@ -17,17 +18,14 @@ public sealed class FeatureWorkflow : ITaskWorkflow
         var dueDate = dto.DueDate != default ? dto.DueDate : DateTime.UtcNow.AddDays(14);
         var priority = dto.Priority ?? Priority.Medium;
 
-        return new TaskEntity
-        {
-            Title = dto.Title,
-            Description = dto.Description,
-            DueDate = dueDate,
-            Priority = priority,
-            StoryPoints = dto.StoryPoints,
-            IsCompleted = false,
-            Status = Status.Pending,
-            CategoryId = dto.CategoryId,
-            Kind = TaskKind.Feature
-        };
+        return TaskEntityBuilder.Create(
+                dto.Title,
+                dto.Description,
+                dueDate,
+                dto.CategoryId,
+                TaskKind.Feature)
+            .WithPriority(priority)
+            .WithStoryPoints(dto.StoryPoints!.Value)
+            .Build();
     }
 }
