@@ -62,6 +62,39 @@ public sealed class TasksControllerTests
 
     #endregion
 
+    #region CloneTask
+
+    [Fact]
+    public async Task CloneTask_ReturnsOkResultWithClonedTask()
+    {
+        // Arrange
+        var taskId = 12;
+        var cloneRequest = new CloneTaskRequestDto
+        {
+            Title = "Copy"
+        };
+
+        var clonedTask = new TaskResponseDto
+        {
+            Id = 33,
+            Title = cloneRequest.Title
+        };
+
+        _tasksServiceMock.Setup(service => service.CloneTaskAsync(taskId, cloneRequest))
+            .ReturnsAsync(clonedTask);
+
+        // Act
+        var result = await _tasksController.CloneTask(taskId, cloneRequest);
+
+        // Assert
+        var okResult = Assert.IsType<OkObjectResult>(result.Result);
+        Assert.Equal(clonedTask, okResult.Value);
+
+        _tasksServiceMock.Verify(service => service.CloneTaskAsync(taskId, cloneRequest), Times.Once);
+    }
+
+    #endregion
+
     #region GetAllTasks
 
     [Fact]

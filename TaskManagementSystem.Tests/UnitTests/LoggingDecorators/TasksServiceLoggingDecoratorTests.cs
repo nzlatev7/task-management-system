@@ -70,6 +70,40 @@ public sealed class TasksServiceLoggingDecoratorTests
 
     #endregion
 
+    #region CloneTask
+
+    [Fact]
+    public async Task CloneTaskAsync_LogsCloneInformation_ReturnsClonedTask()
+    {
+        // Arrange
+        var sourceTaskId = 12;
+        var cloneRequest = new CloneTaskRequestDto
+        {
+            Title = "Cloned task"
+        };
+
+        var clonedTask = new TaskResponseDto
+        {
+            Id = 42,
+            CategoryId = 4
+        };
+
+        _tasksServiceMock.Setup(service => service.CloneTaskAsync(sourceTaskId, cloneRequest))
+            .ReturnsAsync(clonedTask);
+
+        // Act
+        var result = await _tasksServiceLoggingDecorator.CloneTaskAsync(sourceTaskId, cloneRequest);
+
+        // Assert
+        Assert.Equal(clonedTask, result);
+        _tasksServiceMock.Verify(service => service.CloneTaskAsync(sourceTaskId, cloneRequest), Times.Once);
+
+        var message = string.Format(LoggingMessageConstants.TaskClonedSuccessfully, clonedTask.Id, sourceTaskId);
+        _loggerMock.VerifyLogInformationMessage(message);
+    }
+
+    #endregion
+
     #region GetAllTasks
 
     [Fact]

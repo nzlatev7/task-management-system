@@ -3,6 +3,7 @@
 public static class LoggingMessageConstants
 {
     public const string TaskCreatedSuccessfully = "Task with Id {0} created successfully in CategoryId {1}.";
+    public const string TaskClonedSuccessfully = "Task with Id {0} cloned successfully from task {1}.";
     public const string TaskUpdatedSuccessfully = "Task with Id {0} updated successfully.";
     public const string TaskUnlockedSuccessfully = "Task with Id {0} unlocked successfully.";
     public const string TaskRemovedSuccessfully = "Task with Id {0} removed successfully.";

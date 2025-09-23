@@ -165,6 +165,147 @@ public sealed class TasksServiceTests : IClassFixture<TestDatabaseFixture>, IAsy
 
     #endregion
 
+    #region CloneTask
+
+    [Fact]
+    public async Task CloneTaskAsync_FeatureTaskWithDefaults_CreatesPendingCloneWithNewDueDate()
+    {
+        // Arrange
+        var sourceTask = new TaskEntity
+        {
+            Title = "Feature original",
+            Description = "Original description",
+            DueDate = DateTime.UtcNow.AddDays(3),
+            Priority = Priority.High,
+            Status = Status.Completed,
+            IsCompleted = true,
+            CategoryId = _targetCategoryId,
+            Kind = TaskKind.Feature,
+            StoryPoints = 8
+        };
+
+        await _dbContext.Tasks.AddAsync(sourceTask);
+        await _dbContext.SaveChangesAsync();
+
+        var overrideCategoryId = _categoryIds[1];
+        var cloneRequest = new CloneTaskRequestDto
+        {
+            CategoryId = overrideCategoryId
+        };
+
+        _categoryCheckerMock.Setup(c => c.CategoryExistsAsync(overrideCategoryId))
+            .ReturnsAsync(true);
+
+        var before = DateTime.UtcNow;
+
+        // Act
+        var clonedTask = await _tasksService.CloneTaskAsync(sourceTask.Id, cloneRequest);
+
+        var after = DateTime.UtcNow;
+
+        // Assert
+        Assert.NotEqual(sourceTask.Id, clonedTask.Id);
+        Assert.Equal(sourceTask.Title, clonedTask.Title);
+        Assert.Equal(sourceTask.Description, clonedTask.Description);
+        Assert.Equal(overrideCategoryId, clonedTask.CategoryId);
+        Assert.Equal(sourceTask.StoryPoints, clonedTask.StoryPoints);
+        Assert.Equal(sourceTask.Priority, clonedTask.Priority);
+        Assert.Equal(Status.Pending, clonedTask.Status);
+        Assert.False(clonedTask.IsCompleted);
+        Assert.InRange(clonedTask.DueDate, before.AddDays(14), after.AddDays(14));
+
+        var savedClone = await _dbContext.Tasks.SingleAsync(t => t.Id == clonedTask.Id);
+        Assert.Equal(Status.Pending, savedClone.Status);
+        Assert.False(savedClone.IsCompleted);
+
+        _categoryCheckerMock.Verify(c => c.CategoryExistsAsync(overrideCategoryId), Times.Once);
+    }
+
+    [Fact]
+    public async Task CloneTaskAsync_BugTask_SeverityAdjustsPriorityAndClearsStoryPoints()
+    {
+        // Arrange
+        var sourceTask = new TaskEntity
+        {
+            Title = "Bug",
+            Description = "Bug description",
+            DueDate = DateTime.UtcNow.AddDays(1),
+            Priority = Priority.Low,
+            Status = Status.InProgress,
+            IsCompleted = false,
+            CategoryId = _targetCategoryId,
+            Kind = TaskKind.Bug
+        };
+
+        await _dbContext.Tasks.AddAsync(sourceTask);
+        await _dbContext.SaveChangesAsync();
+
+        _categoryCheckerMock.Setup(c => c.CategoryExistsAsync(_targetCategoryId))
+            .ReturnsAsync(true);
+
+        var cloneRequest = new CloneTaskRequestDto
+        {
+            Severity = 5
+        };
+
+        var before = DateTime.UtcNow;
+
+        // Act
+        var clonedTask = await _tasksService.CloneTaskAsync(sourceTask.Id, cloneRequest);
+
+        var after = DateTime.UtcNow;
+
+        // Assert
+        Assert.NotEqual(sourceTask.Id, clonedTask.Id);
+        Assert.Equal(Priority.High, clonedTask.Priority);
+        Assert.Null(clonedTask.StoryPoints);
+        Assert.Equal(Status.Pending, clonedTask.Status);
+        Assert.InRange(clonedTask.DueDate, before.AddDays(2), after.AddDays(2));
+
+        _categoryCheckerMock.VerifyCategoryExistsCall();
+    }
+
+    [Fact]
+    public async Task CloneTaskAsync_IncidentTask_SetsHighPriorityAndInProgressStatus()
+    {
+        // Arrange
+        var sourceTask = new TaskEntity
+        {
+            Title = "Incident",
+            Description = "Incident description",
+            DueDate = DateTime.UtcNow,
+            Priority = Priority.Low,
+            Status = Status.Completed,
+            IsCompleted = true,
+            CategoryId = _targetCategoryId,
+            Kind = TaskKind.Incident
+        };
+
+        await _dbContext.Tasks.AddAsync(sourceTask);
+        await _dbContext.SaveChangesAsync();
+
+        _categoryCheckerMock.Setup(c => c.CategoryExistsAsync(_targetCategoryId))
+            .ReturnsAsync(true);
+
+        var before = DateTime.UtcNow;
+
+        // Act
+        var clonedTask = await _tasksService.CloneTaskAsync(sourceTask.Id, new CloneTaskRequestDto());
+
+        var after = DateTime.UtcNow;
+
+        // Assert
+        Assert.NotEqual(sourceTask.Id, clonedTask.Id);
+        Assert.Equal(Priority.High, clonedTask.Priority);
+        Assert.Equal(Status.InProgress, clonedTask.Status);
+        Assert.False(clonedTask.IsCompleted);
+        Assert.InRange(clonedTask.DueDate, before.AddHours(4), after.AddHours(4));
+
+        _categoryCheckerMock.VerifyCategoryExistsCall();
+    }
+
+    #endregion
+
     #region GetAllTasks
 
     [Theory]

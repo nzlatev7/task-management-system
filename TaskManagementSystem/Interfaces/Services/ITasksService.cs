@@ -8,6 +8,8 @@ public interface ITasksService
 {
     Task<TaskResponseDto> CreateTaskAsync(CreateTaskRequestDto taskDto);
 
+    Task<TaskResponseDto> CloneTaskAsync(int taskId, CloneTaskRequestDto? cloneDto);
+
     Task<IEnumerable<TaskResponseDto>> GetAllTasksAsync(GetAllTasksRequestDto sortBy);
 
     Task<IEnumerable<TaskResponseDto>> GetBacklogAsync(TaskKind kind);

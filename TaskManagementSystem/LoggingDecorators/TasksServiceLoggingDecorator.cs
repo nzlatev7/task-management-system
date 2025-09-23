@@ -28,6 +28,15 @@ public class TasksServiceLoggingDecorator : ITasksService
         return task;
     }
 
+    public async Task<TaskResponseDto> CloneTaskAsync(int taskId, CloneTaskRequestDto? cloneDto)
+    {
+        var clonedTask = await _wrappee.CloneTaskAsync(taskId, cloneDto);
+
+        _logger.LogInformation(LoggingMessageConstants.TaskClonedSuccessfully, clonedTask.Id, taskId);
+
+        return clonedTask;
+    }
+
     public async Task<IEnumerable<TaskResponseDto>> GetAllTasksAsync(GetAllTasksRequestDto sortBy)
     {
         return await _wrappee.GetAllTasksAsync(sortBy);

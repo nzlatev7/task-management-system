@@ -11,6 +11,7 @@ using TaskManagementSystem.Exceptions;
 using TaskManagementSystem.Extensions;
 using TaskManagementSystem.Helpers;
 using TaskManagementSystem.Interfaces;
+using TaskManagementSystem.Workflows.Prototypes;
 
 namespace TaskManagementSystem.Services;
 
@@ -40,6 +41,25 @@ public sealed class TasksService : ITasksService
         await _dbContext.SaveChangesAsync();
 
         return taskEntity.ToOutDto();
+    }
+
+    public async Task<TaskResponseDto> CloneTaskAsync(int taskId, CloneTaskRequestDto? cloneDto)
+    {
+        var sourceTask = await _dbContext.Tasks.FindAsync(taskId)
+            ?? throw new NotFoundException(ErrorMessageConstants.TaskDoesNotExist);
+
+        cloneDto ??= new CloneTaskRequestDto();
+
+        var targetCategoryId = cloneDto.CategoryId ?? sourceTask.CategoryId;
+        await ValidatateCategoryAsync(targetCategoryId);
+
+        var prototype = CreatePrototype(sourceTask.Kind);
+        var clonedTask = prototype.Clone(sourceTask, cloneDto);
+
+        await _dbContext.Tasks.AddAsync(clonedTask);
+        await _dbContext.SaveChangesAsync();
+
+        return clonedTask.ToOutDto();
     }
 
     public async Task<IEnumerable<TaskResponseDto>> GetAllTasksAsync(GetAllTasksRequestDto sortByInstructions)
@@ -168,4 +188,13 @@ public sealed class TasksService : ITasksService
         if (canLockedBeEdited)
             throw new ConflictException(ErrorMessageConstants.LockedTaskCanNotBeEdited);
     }
+
+    private static ITaskPrototype CreatePrototype(TaskKind kind) => kind switch
+    {
+        TaskKind.Bug => new BugTaskPrototype(),
+        TaskKind.Feature => new FeatureTaskPrototype(),
+        TaskKind.Incident => new IncidentTaskPrototype(),
+        TaskKind.Research => new FeatureTaskPrototype(),
+        _ => new FeatureTaskPrototype()
+    };
 }
