@@ -1,4 +1,5 @@
-﻿using TaskManagementSystem.Database.Models;
+using TaskManagementSystem.Builders;
+using TaskManagementSystem.Database.Models;
 using TaskManagementSystem.DTOs.Request;
 using TaskManagementSystem.Enums;
 
@@ -23,24 +24,20 @@ public static class EntityMappingExtensions
 
     public static TaskEntity ToTaskEntityForCreate(this CreateTaskRequestDto taskDto)
     {
-        var taskEntity = new TaskEntity()
-        {
-            Title = taskDto.Title,
-            Description = taskDto.Description,
-            DueDate = taskDto.DueDate,
-            IsCompleted = false,
-            Status = Status.Pending,
-            CategoryId = taskDto.CategoryId,
-            Kind = taskDto.Kind
-        };
+        var builder = TaskEntityBuilder.Create(
+            taskDto.Title,
+            taskDto.Description,
+            taskDto.DueDate,
+            taskDto.CategoryId,
+            taskDto.Kind);
 
         if (taskDto.Priority.HasValue)
-            taskEntity.Priority = taskDto.Priority.Value;
+            builder.WithPriority(taskDto.Priority.Value);
 
         if (taskDto.StoryPoints.HasValue)
-            taskEntity.StoryPoints = taskDto.StoryPoints.Value;
+            builder.WithStoryPoints(taskDto.StoryPoints.Value);
 
-        return taskEntity;
+        return builder.Build();
     }
 
     public static void UpdateTaskEntity(this UpdateTaskRequestDto taskDto, TaskEntity currentTask)
