@@ -35,7 +35,7 @@ public static class DependencyInjectionExtensions
         services.AddScoped<ITasksService, ScrumTasksService>();
         services.Decorate<ITasksService, TasksServiceLoggingDecorator>();
 
-        services.AddScoped<ITaskArtifactsFactory, ScrumTaskArtifactsFactory>();
+        services.AddSingleton<ITaskArtifactsFactory, ScrumTaskArtifactsFactory>();
 
         services.AddScoped<ICategoriesService, CategoriesSerivce>();
         services.Decorate<ICategoriesService, CategoriesServiceLoggingDecorator>();
