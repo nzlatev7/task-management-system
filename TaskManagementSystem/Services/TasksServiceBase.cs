@@ -46,6 +46,25 @@ public abstract class TasksServiceBase : ITasksService
         return taskEntity.ToOutDto();
     }
 
+    public async Task<TaskResponseDto> CloneTaskAsync(int taskId, CloneTaskRequestDto? cloneDto)
+    {
+        var sourceTask = await _dbContext.Tasks.FindAsync(taskId)
+            ?? throw new NotFoundException(ErrorMessageConstants.TaskDoesNotExist);
+
+        cloneDto ??= new CloneTaskRequestDto();
+
+        var targetCategoryId = cloneDto.CategoryId ?? sourceTask.CategoryId;
+        await ValidatateCategoryAsync(targetCategoryId);
+
+        var prototype = _taskArtifactsFactory.CreatePrototype(sourceTask.Kind);
+        var clonedTask = prototype.Clone(sourceTask, cloneDto);
+
+        await _dbContext.Tasks.AddAsync(clonedTask);
+        await _dbContext.SaveChangesAsync();
+
+        return clonedTask.ToOutDto();
+    }
+
     public async Task<IEnumerable<TaskResponseDto>> GetAllTasksAsync(GetAllTasksRequestDto sortByInstructions)
     {
         var tasks = await _dbContext.Tasks

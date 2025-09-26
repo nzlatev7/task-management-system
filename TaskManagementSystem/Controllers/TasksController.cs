@@ -25,6 +25,15 @@ public class TasksController : ControllerBase
         return Ok(result);
     }
 
+    [HttpPost]
+    [Route(RouteConstants.TaskClone)]
+    public async Task<ActionResult<TaskResponseDto>> CloneTask([FromRoute] int id, [FromBody] CloneTaskRequestDto? cloneDto)
+    {
+        var result = await _tasksService.CloneTaskAsync(id, cloneDto);
+
+        return Ok(result);
+    }
+
     [HttpGet]
     [Route(RouteConstants.Tasks)]
     public async Task<ActionResult<IEnumerable<TaskResponseDto>>> GetAllTasks([FromQuery] GetAllTasksRequestDto sortBy)
