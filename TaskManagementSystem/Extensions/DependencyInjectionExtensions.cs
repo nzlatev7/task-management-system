@@ -2,12 +2,14 @@
 using TaskManagementSystem.Database;
 using TaskManagementSystem.ExceptionHandlers;
 using TaskManagementSystem.Exceptions;
-using TaskManagementSystem.TaskDeleteStategy;
 using TaskManagementSystem.Interfaces;
+using TaskManagementSystem.Interfaces.Reports;
 using TaskManagementSystem.LoggingDecorators;
 using TaskManagementSystem.Checkers;
 using TaskManagementSystem.Services;
 using TaskManagementSystem.Factories;
+using TaskManagementSystem.Reports;
+using TaskManagementSystem.TaskDeleteStategy;
 
 namespace TaskManagementSystem.Extensions;
 
@@ -39,6 +41,8 @@ public static class DependencyInjectionExtensions
 
         services.AddScoped<ICategoriesService, CategoriesSerivce>();
         services.Decorate<ICategoriesService, CategoriesServiceLoggingDecorator>();
+
+        services.AddSingleton<IReportTasksQueryBuilder, ReportTasksQueryBuilder>();
 
         services.AddScoped<IReportsService, ReportsService>();
 
