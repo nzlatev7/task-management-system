@@ -5,21 +5,24 @@ using TaskManagementSystem.DTOs.Request;
 using TaskManagementSystem.DTOs.Response;
 using TaskManagementSystem.Helpers;
 using TaskManagementSystem.Interfaces;
+using TaskManagementSystem.Interfaces.Reports;
 
 namespace TaskManagementSystem.Services;
 
 public class ReportsService : IReportsService
 {
     private readonly TaskManagementSystemDbContext _dbContext;
+    private readonly IReportTasksQueryBuilder _reportTasksQueryBuilder;
 
-    public ReportsService(TaskManagementSystemDbContext dbContext)
+    public ReportsService(TaskManagementSystemDbContext dbContext, IReportTasksQueryBuilder reportTasksQueryBuilder)
     {
         _dbContext = dbContext;
+        _reportTasksQueryBuilder = reportTasksQueryBuilder;
     }
 
     public async Task<IEnumerable<ReportTasksResponseDto>> GetReportForTasksAsync(ReportTasksRequestDto reportFilters)
     {
-        IQueryable<TaskEntity> tasks = ApplyFilters(_dbContext.Tasks, reportFilters);
+        IQueryable<TaskEntity> tasks = _reportTasksQueryBuilder.Apply(_dbContext.Tasks, reportFilters);
 
         var result = await tasks
             .GroupBy(x => x.CategoryId)
@@ -34,28 +37,4 @@ public class ReportsService : IReportsService
         return result;
     }
 
-    private IQueryable<TaskEntity> ApplyFilters(IQueryable<TaskEntity> tasks, ReportTasksRequestDto reportDto)
-    {
-        if (reportDto.Status.HasValue)
-        {
-            tasks = tasks.Where(x => x.Status == reportDto.Status);
-        }
-
-        if (reportDto.Priority.HasValue)
-        {
-            tasks = tasks.Where(x => x.Priority == reportDto.Priority);
-        }
-
-        if (reportDto.DueAfter.HasValue)
-        {
-            tasks = tasks.Where(x => x.DueDate > reportDto.DueAfter);
-        }
-
-        if (reportDto.DueBefore.HasValue)
-        {
-            tasks = tasks.Where(x => x.DueDate < reportDto.DueBefore);
-        }
-
-        return tasks;
-    }
 }
